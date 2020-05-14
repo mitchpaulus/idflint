@@ -1,5 +1,7 @@
 module ObjectTypes where
 
+-- Used awk '/^[a-zA-Z][a-zA-Z0-9:]*,/ { gsub(/:/,"");  split($0, array, ","); print array[1]  " | " }' Energy+.idd
+-- for this.
 data IdfObjectType =
     Version |
     SimulationControl |
