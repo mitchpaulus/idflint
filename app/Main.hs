@@ -1,25 +1,34 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import System.Environment
+import System.Directory
 import Lib
 import ObjectTypes
 import Data.Char
+import qualified Data.Text.IO as T
 
 main :: IO ()
 main = do
     args <- getArgs
-    if parseArgs args then putStrLn "energyplus-lint\n\nUSAGE: ep-lint [options].." else return ()
+    let options = parseArgs args defaultLintOptions
+    if help options
+        then putStrLn "idf-lint\n\nUSAGE: ep-lint [options].."
+        else do
+             let path = filepath options
+             fileExists <- doesFileExist path
+             if fileExists
+             then do
+                  idfFile <- T.readFile path
+                  T.putStrLn idfFile
+             else putStrLn $ path ++ "Not found."
 
-    return ()
+parseArgs :: [String] -> EpLintOptions -> EpLintOptions
+parseArgs (x:xs) options
+            | x == "-h" || x == "--help" = parseArgs xs (options { help = True })
+            | otherwise                  = parseArgs xs (options { filepath = x })
 
-parseArgs :: [String] -> Bool
-parseArgs args
-        | any isHelp args = True
-        | otherwise       = False
-
-isHelp :: String -> Bool
-isHelp argument = argument == "-h" || argument == "--help"
-
+parseArgs [] options = options
 
 data EpLintOptions = EpLintOptions {
                                      help :: Bool,

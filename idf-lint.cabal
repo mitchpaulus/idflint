@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d9b04882cbe4b659d3dd70984bf225ea10e1328a96f10d217257af9ef1e65099
+-- hash: 8aae3185ba02410c612cc6d85e5b8743be26fdc3c4f46f165a04f39c2280c71f
 
 name:           idf-lint
 version:        0.1.0.0
@@ -35,6 +35,8 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , directory
+    , text
   default-language: Haskell2010
 
 executable idf-lint
@@ -46,7 +48,9 @@ executable idf-lint
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , directory
     , idf-lint
+    , text
   default-language: Haskell2010
 
 test-suite idf-lint-test
@@ -59,5 +63,7 @@ test-suite idf-lint-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , directory
     , idf-lint
+    , text
   default-language: Haskell2010
