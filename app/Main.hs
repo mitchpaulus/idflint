@@ -6,7 +6,8 @@ import System.Directory
 import Lib
 import ObjectTypes
 import Data.Char
-import qualified Data.Text.IO as T
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
 
 main :: IO ()
 main = do
@@ -19,8 +20,8 @@ main = do
              fileExists <- doesFileExist path
              if fileExists
              then do
-                  idfFile <- T.readFile path
-                  T.putStrLn idfFile
+                  idfFile <- TIO.readFile path
+                  TIO.putStrLn idfFile
              else putStrLn $ path ++ "Not found."
 
 parseArgs :: [String] -> EpLintOptions -> EpLintOptions
@@ -38,40 +39,43 @@ data EpLintOptions = EpLintOptions {
 defaultLintOptions = EpLintOptions { help = False, filepath = "in.idf" }
 
 
-removeCommentLine :: String -> String
-removeCommentLine line = takeWhile (/= '!') line
+removeCommentLine :: T.Text -> T.Text
+removeCommentLine line = T.takeWhile (/= '!') line
 
-removeComments :: String -> String
-removeComments idfFile = (unlines . (map removeCommentLine) . lines) idfFile
+removeComments :: T.Text -> T.Text
+removeComments idfFile = (T.unlines . (map removeCommentLine) . T.lines) idfFile
 
 
-splitOnChar :: Char -> String -> [String]
-splitOnChar char s = case dropWhile (== char) s of
+splitOnChar :: Char -> T.Text -> [T.Text]
+splitOnChar char s = case T.dropWhile (== char) s of
                       "" -> []
                       s' -> w : splitOnChar char s''
-                            where (w, s'') = break (== char) s'
+                            where (w, s'') = T.break (== char) s'
 
-splitObjects :: String -> [String]
+splitObjects :: T.Text -> [T.Text]
 splitObjects idfFile = splitOnChar ';' idfFile
 
-splitFields :: String -> [String]
+splitFields :: T.Text -> [T.Text]
 splitFields idfObject = splitOnChar ',' idfObject
 
-lexIdf :: String -> [IdfObject]
+lexIdf :: T.Text -> [IdfObject]
 lexIdf idfFile =  fmap splitFields (splitObjects (removeComments idfFile))
 
-type IdfField  = String
+type IdfField  = T.Text
 type IdfObject = [IdfField]
 
-data LexResult = LexResult { lexResultLineNum :: Int, lexResultMessage :: String }
+data LexResult = LexResult { lexResultLineNum :: Int, lexResultMessage :: T.Text }
 
 -- This signals a malformed field or object and should be considered a lexical error.
-newLineAfterField :: String -> Bool
-newLineAfterField field = elem '\n' (dropWhile isSpace field)
+newLineAfterField :: T.Text -> Bool
+newLineAfterField field =
+    case T.find (== '\n') (T.dropWhile isSpace field) of
+        Just _ -> True
+        Nothing -> False
 
 badFields = filter newLineAfterField (concat (lexIdf testFile))
 
-testFile = unlines
+testFile = T.unlines
  [
     "Building,",
     "    701A,                    !- Name",
