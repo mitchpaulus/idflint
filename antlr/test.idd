@@ -1,0 +1,2081 @@
+! Comment 1
+
+\group Simulation Parameters
+
+Version,
+      \memo Specifies the EnergyPlus version of the IDF file.
+      \unique-object
+      \format singleLine
+  A1 ; \field Version Identifier
+      \default 9.2
+    
+SimulationControl,
+      \unique-object
+      \memo Note that the following 3 fields are related to the Sizing:Zone, Sizing:System,
+      \memo and Sizing:Plant objects.  Having these fields set to Yes but no corresponding
+      \memo Sizing object will not cause the sizing to be done. However, having any of these
+      \memo fields set to No, the corresponding Sizing object is ignored.
+      \memo Note also, if you want to do system sizing, you must also do zone sizing in the same
+      \memo run or an error will result.
+      \min-fields 5
+  A1, \field Do Zone Sizing Calculation
+      \note If Yes, Zone sizing is accomplished from corresponding Sizing:Zone objects
+      \note and autosize fields.
+      \type choice
+      \key Yes
+      \key No
+      \default No
+  A2, \field Do System Sizing Calculation
+      \note If Yes, System sizing is accomplished from corresponding Sizing:System objects
+      \note and autosize fields.
+      \note If Yes, Zone sizing (previous field) must also be Yes.
+      \type choice
+      \key Yes
+      \key No
+      \default No
+  A3, \field Do Plant Sizing Calculation
+      \note If Yes, Plant sizing is accomplished from corresponding Sizing:Plant objects
+      \note and autosize fields.
+      \type choice
+      \key Yes
+      \key No
+      \default No
+  A4, \field Run Simulation for Sizing Periods
+      \note If Yes, SizingPeriod:* objects are executed and results from those may be displayed..
+      \type choice
+      \key Yes
+      \key No
+      \default Yes
+  A5, \field Run Simulation for Weather File Run Periods
+      \note If Yes, RunPeriod:* objects are executed and results from those may be displayed..
+      \type choice
+      \key Yes
+      \key No
+      \default Yes
+  A6, \field Do HVAC Sizing Simulation for Sizing Periods
+      \note If Yes, SizingPeriod:* objects are exectuted additional times for advanced sizing.
+      \note Currently limited to use with coincident plant sizing, see Sizing:Plant object
+      \type choice
+      \key Yes
+      \key No
+      \default No
+  N1; \field Maximum Number of HVAC Sizing Simulation Passes
+      \note the entire set of SizingPeriod:* objects may be repeated to fine tune size results
+      \note this input sets a limit on the number of passes that the sizing algorithms can repeate the set
+      \type integer
+      \minimum 1
+      \default 1
+
+PerformancePrecisionTradeoffs,
+      \unique-object
+      \memo This object enables users to choose certain options that speed up EnergyPlus simulation,
+      \memo but may lead to small decreases in accuracy of results.
+  A1; \field Use Coil Direct Solutions
+      \note If Yes, an analytical or empirical solution will be used to replace iterations in
+      \note the coil performance calculations.
+      \type choice
+      \key Yes
+      \key No
+      \default No
+
+Building,
+       \memo Describes parameters that are used during the simulation
+       \memo of the building. There are necessary correlations between the entries for
+       \memo this object and some entries in the Site:WeatherStation and
+       \memo Site:HeightVariation objects, specifically the Terrain field.
+       \unique-object
+       \required-object
+       \min-fields 8
+  A1 , \field Name
+       \retaincase
+       \default NONE
+  N1 , \field North Axis
+       \note degrees from true North
+       \units deg
+       \type real
+       \default 0.0
+  A2 , \field Terrain
+       \note  Country=FlatOpenCountry | Suburbs=CountryTownsSuburbs | City=CityCenter | Ocean=body of water (5km) | Urban=Urban-Industrial-Forest
+       \type choice
+       \key Country
+       \key Suburbs
+       \key City
+       \key Ocean
+       \key Urban
+       \default Suburbs
+  N2 , \field Loads Convergence Tolerance Value
+       \note Loads Convergence Tolerance Value is a fraction of load
+       \type real
+       \minimum> 0.0
+       \maximum .5
+       \default .04
+  N3 , \field Temperature Convergence Tolerance Value
+       \units deltaC
+       \type real
+       \minimum> 0.0
+       \maximum .5
+       \default .4
+  A3 , \field Solar Distribution
+       \note  MinimalShadowing | FullExterior | FullInteriorAndExterior | FullExteriorWithReflections | FullInteriorAndExteriorWithReflections
+       \type choice
+       \key MinimalShadowing
+       \key FullExterior
+       \key FullInteriorAndExterior
+       \key FullExteriorWithReflections
+       \key FullInteriorAndExteriorWithReflections
+       \default FullExterior
+  N4 , \field Maximum Number of Warmup Days
+       \note EnergyPlus will only use as many warmup days as needed to reach convergence tolerance.
+       \note This field's value should NOT be set less than 25.
+       \type integer
+       \minimum> 0
+       \default 25
+  N5 ; \field Minimum Number of Warmup Days
+       \note The minimum number of warmup days that produce enough temperature and flux history
+       \note to start EnergyPlus simulation for all reference buildings was suggested to be 6.
+       \note When this field is greater than the maximum warmup days defined previous field
+       \note the maximum number of warmup days will be reset to the minimum value entered here.
+       \note Warmup days will be set to be the value you entered when it is less than the default 6.
+       \type integer
+       \minimum> 0
+       \default 6
+
+ShadowCalculation,
+       \unique-object
+       \memo This object is used to control details of the solar, shading, and daylighting models
+       \extensible:1
+  A1 , \field Calculation Method
+       \note choose calculation method. note that TimestepFrequency is only needed for certain cases
+       \note and can increase execution time significantly.
+       \type choice
+       \key AverageOverDaysInFrequency
+       \key TimestepFrequency
+       \default AverageOverDaysInFrequency
+  N1 , \field Calculation Frequency
+       \type integer
+       \minimum 1
+       \default 20
+       \note enter number of days
+       \note this field is only used if the previous field is set to AverageOverDaysInFrequency
+       \note 0=Use Default Periodic Calculation|<else> calculate every <value> day
+       \note only really applicable to RunPeriods
+       \note warning issued if >31
+  N2 , \field Maximum Figures in Shadow Overlap Calculations
+       \note Number of allowable figures in shadow overlap calculations
+       \type integer
+       \minimum 200
+       \default 15000
+  A2 , \field Polygon Clipping Algorithm
+       \note Advanced Feature.  Internal default is SutherlandHodgman
+       \note Refer to InputOutput Reference and Engineering Reference for more information
+       \type choice
+       \key ConvexWeilerAtherton
+       \key SutherlandHodgman
+       \default SutherlandHodgman
+  A3 , \field Sky Diffuse Modeling Algorithm
+       \note Advanced Feature.  Internal default is SimpleSkyDiffuseModeling
+       \note If you have shading elements that change transmittance over the
+       \note year, you may wish to choose the detailed method.
+       \note Refer to InputOutput Reference and Engineering Reference for more information
+       \type choice
+       \key SimpleSkyDiffuseModeling
+       \key DetailedSkyDiffuseModeling
+       \default SimpleSkyDiffuseModeling
+  A4 , \field External Shading Calculation Method
+       \type choice
+       \key ScheduledShading
+       \key InternalCalculation
+       \key ImportedShading
+       \default InternalCalculation
+       \note If ScheduledShading is chosen, the External Shading Fraction Schedule Name is required
+       \note in SurfaceProperty:LocalEnvironment.
+       \note If ImportedShading is chosen, the Schedule:File:Shading object is required.
+  A5 , \field Output External Shading Calculation Results
+       \type choice
+       \key Yes
+       \key No
+       \default No
+       \note If Yes is chosen, the calculated external shading fraction results will be saved to an external CSV file with surface names as the column headers.
+  A6 , \field Disable Self-Shading Within Shading Zone Groups
+       \note If Yes, self-shading will be disabled from all exterior surfaces in a given Shading Zone Group to surfaces within
+       \note the same Shading Zone Group.
+       \note If both Disable Self-Shading Within Shading Zone Groups and Disable Self-Shading From Shading Zone Groups to Other Zones = Yes,
+       \note then all self-shading from exterior surfaces will be disabled.
+       \note If only one of these fields = Yes, then at least one Shading Zone Group must be specified, or this field will be ignored.
+       \note Shading from Shading:* surfaces, overhangs, fins, and reveals will not be disabled.
+       \type choice
+       \key Yes
+       \key No
+       \default No
+  A7 , \field Disable Self-Shading From Shading Zone Groups to Other Zones
+       \note If Yes, self-shading will be disabled from all exterior surfaces in a given Shading Zone Group to all other zones in the model.
+       \note If both Disable Self-Shading Within Shading Zone Groups and Disable Self-Shading From Shading Zone Groups to Other Zones = Yes,
+       \note then all self-shading from exterior surfaces will be disabled.
+       \note If only one of these fields = Yes, then at least one Shading Zone Group must be specified, or this field will be ignored.
+       \note Shading from Shading:* surfaces, overhangs, fins, and reveals will not be disabled.
+       \type choice
+       \key Yes
+       \key No
+       \default No
+  A8 , \field Shading Zone Group 1 ZoneList Name
+       \note Specifies a group of zones which are controlled by the Disable Self-Shading fields.
+       \type object-list
+       \object-list ZoneListNames
+       \begin-extensible
+  A9 , \field Shading Zone Group 2 ZoneList Name
+       \type object-list
+       \object-list ZoneListNames
+  A10, \field Shading Zone Group 3 ZoneList Name
+       \type object-list
+       \object-list ZoneListNames
+  A11, \field Shading Zone Group 4 ZoneList Name
+       \type object-list
+       \object-list ZoneListNames
+  A12, \field Shading Zone Group 5 ZoneList Name
+       \type object-list
+       \object-list ZoneListNames
+  A13; \field Shading Zone Group 6 ZoneList Name
+       \type object-list
+       \object-list ZoneListNames
+
+SurfaceConvectionAlgorithm:Inside,
+       \memo Default indoor surface heat transfer convection algorithm to be used for all zones
+       \unique-object
+       \format singleLine
+  A1 ; \field Algorithm
+       \type choice
+       \key Simple
+       \key TARP
+       \key CeilingDiffuser
+       \key AdaptiveConvectionAlgorithm
+       \default TARP
+       \note Simple = constant value natural convection (ASHRAE)
+       \note TARP = variable natural convection based on temperature difference (ASHRAE, Walton)
+       \note CeilingDiffuser = ACH-based forced and mixed convection correlations
+       \note  for ceiling diffuser configuration with simple natural convection limit
+       \note AdaptiveConvectionAlgorithm = dynamic selection of convection models based on conditions
+
+SurfaceConvectionAlgorithm:Outside,
+       \memo Default outside surface heat transfer convection algorithm to be used for all zones
+       \unique-object
+       \format singleLine
+  A1 ; \field Algorithm
+       \type choice
+       \key SimpleCombined
+       \key TARP
+       \key MoWiTT
+       \key DOE-2
+       \key AdaptiveConvectionAlgorithm
+       \default DOE-2
+       \note SimpleCombined = Combined radiation and convection coefficient using simple ASHRAE model
+       \note TARP = correlation from models developed by ASHRAE, Walton, and Sparrow et. al.
+       \note MoWiTT = correlation from measurements by Klems and Yazdanian for smooth surfaces
+       \note DOE-2 = correlation from measurements by Klems and Yazdanian for rough surfaces
+       \note AdaptiveConvectionAlgorithm = dynamic selection of correlations based on conditions
+
+HeatBalanceAlgorithm,
+       \memo Determines which Heat Balance Algorithm will be used ie.
+       \memo CTF (Conduction Transfer Functions),
+       \memo EMPD (Effective Moisture Penetration Depth with Conduction Transfer Functions).
+       \memo Advanced/Research Usage: CondFD (Conduction Finite Difference)
+       \memo Advanced/Research Usage: ConductionFiniteDifferenceSimplified
+       \memo Advanced/Research Usage: HAMT (Combined Heat And Moisture Finite Element)
+       \unique-object
+       \format singleLine
+  A1 , \field Algorithm
+       \type choice
+       \key ConductionTransferFunction
+       \key MoisturePenetrationDepthConductionTransferFunction
+       \key ConductionFiniteDifference
+       \key CombinedHeatAndMoistureFiniteElement
+       \default ConductionTransferFunction
+  N1 , \field Surface Temperature Upper Limit
+       \type real
+       \minimum 200
+       \default 200
+       \units C
+  N2 , \field Minimum Surface Convection Heat Transfer Coefficient Value
+       \units W/m2-K
+       \default 0.1
+       \minimum> 0.0
+  N3 ; \field Maximum Surface Convection Heat Transfer Coefficient Value
+       \units W/m2-K
+       \default 1000
+       \minimum 1.0
+
+HeatBalanceSettings:ConductionFiniteDifference,
+       \memo Determines settings for the Conduction Finite Difference
+       \memo algorithm for surface heat transfer modeling.
+       \unique-object
+  A1 , \field Difference Scheme
+       \type choice
+       \key CrankNicholsonSecondOrder
+       \key FullyImplicitFirstOrder
+       \default FullyImplicitFirstOrder
+  N1 , \field Space Discretization Constant
+       \note increase or decrease number of nodes
+       \type real
+       \default 3
+  N2 , \field Relaxation Factor
+       \type real
+       \default 1.0
+       \minimum 0.01
+       \maximum 1.0
+  N3 ; \field Inside Face Surface Temperature Convergence Criteria
+       \type real
+       \default 0.002
+       \minimum 1.0E-7
+       \maximum 0.01
+
+ZoneAirHeatBalanceAlgorithm,
+       \memo Determines which algorithm will be used to solve the zone air heat balance.
+       \unique-object
+       \format singleLine
+       \min-fields 1
+  A1 ; \field Algorithm
+       \type choice
+       \key ThirdOrderBackwardDifference
+       \key AnalyticalSolution
+       \key EulerMethod
+       \default ThirdOrderBackwardDifference
+
+ZoneAirContaminantBalance,
+       \memo Determines which contaminant concentration will be simulates.
+       \unique-object
+       \format singleLine
+  A1 , \field Carbon Dioxide Concentration
+       \note If Yes, CO2 simulation will be performed.
+       \type choice
+       \key Yes
+       \key No
+       \default No
+  A2 , \field Outdoor Carbon Dioxide Schedule Name
+       \note Schedule values should be in parts per million (ppm)
+       \type object-list
+       \object-list ScheduleNames
+  A3 , \field Generic Contaminant Concentration
+       \note If Yes, generic contaminant simulation will be performed.
+       \type choice
+       \key Yes
+       \key No
+       \default No
+  A4 ; \field Outdoor Generic Contaminant Schedule Name
+       \note Schedule values should be generic contaminant concentration in parts per
+       \note million (ppm)
+       \type object-list
+       \object-list ScheduleNames
+
+ZoneAirMassFlowConservation,
+       \memo Enforces the zone air mass flow balance by adjusting zone mixing object and/or
+       \memo infiltration object mass flow rates.
+       \memo If either mixing or infiltration is active, then the zone air mass flow
+       \memo balance calculation will attempt to enforce conservation of mass for each zone.
+       \memo If mixing is "No" and infiltration is "None", then the zone air mass flow
+       \memo calculation defaults to assume self-balanced simple flow mixing and infiltration objects.
+       \unique-object
+       \min-fields 3
+  A1,  \field Adjust Zone Mixing For Zone Air Mass Flow Balance
+       \note If Yes, Zone mixing object flow rates are adjusted to balance the zone air mass flow
+       \note and additional infiltration air flow may be added if required in order to balance the
+       \note zone air mass flow.
+       \type choice
+       \key Yes
+       \key No
+       \default No
+  A2,  \field Infiltration Balancing Method
+       \note This input field allows user to choose how zone infiltration flow is treated during
+       \note the zone air mass flow balance calculation.
+       \type choice
+       \key AddInfiltrationFlow
+       \key AdjustInfiltrationFlow
+       \key None
+       \default AddInfiltrationFlow
+       \note AddInfiltrationFlow may add infiltration to the base flow specified in the
+       \note infiltration object to balance the zone air mass flow. The additional infiltration
+       \note air mass flow is not self-balanced. The base flow is assumed to be self-balanced.
+       \note AdjustInfiltrationFlow may adjust the base flow calculated using
+       \note the base flow specified in the infiltration object to balance the zone air mass flow. If it
+       \note If no adjustment is required, then the base infiltration is assumed to be self-balanced.
+       \note None will make no changes to the base infiltration flow.
+  A3;  \field Infiltration Balancing Zones
+       \note This input field allows user to choose which zones are included in infiltration balancing.
+       \note MixingSourceZonesOnly allows infiltration balancing only in zones which as source zones for mixing
+       \note which also have an infiltration object defined.
+       \note AllZones allows infiltration balancing in any zone which has an infiltration object defined.
+       \type choice
+       \key MixingSourceZonesOnly
+       \key AllZones
+       \default MixingSourceZonesOnly
+
+ZoneCapacitanceMultiplier:ResearchSpecial,
+       \format singleLine
+       \memo Multiplier altering the relative capacitance of the air compared to an empty zone
+       \min-fields 6
+  A1 , \field Name
+       \required-field
+       \type alpha
+  A2 , \field Zone or ZoneList Name
+       \type object-list
+       \object-list ZoneAndZoneListNames
+       \note If this field is left blank, the multipliers are applied to all the zones not specified
+  N1 , \field Temperature Capacity Multiplier
+       \type real
+       \default 1.0
+       \minimum> 0.0
+       \note Used to alter the capacitance of zone air with respect to heat or temperature
+  N2 , \field Humidity Capacity Multiplier
+       \type real
+       \default 1.0
+       \minimum> 0.0
+       \note Used to alter the capacitance of zone air with respect to moisture or humidity ratio
+  N3 , \field Carbon Dioxide Capacity Multiplier
+       \type real
+       \default 1.0
+       \minimum> 0.0
+       \note Used to alter the capacitance of zone air with respect to zone air carbon dioxide concentration
+  N4 ; \field Generic Contaminant Capacity Multiplier
+       \type real
+       \default 1.0
+       \minimum> 0.0
+       \note Used to alter the capacitance of zone air with respect to zone air generic contaminant concentration
+
+Timestep,
+       \memo Specifies the "basic" timestep for the simulation. The
+       \memo value entered here is also known as the Zone Timestep.  This is used in
+       \memo the Zone Heat Balance Model calculation as the driving timestep for heat
+       \memo transfer and load calculations.
+       \unique-object
+       \format singleLine
+  N1 ; \field Number of Timesteps per Hour
+       \note Number in hour: normal validity 4 to 60: 6 suggested
+       \note Must be evenly divisible into 60
+       \note Allowable values include 1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, and 60
+       \note Normal 6 is minimum as lower values may cause inaccuracies
+       \note A minimum value of 20 is suggested for both ConductionFiniteDifference
+       \note and CombinedHeatAndMoistureFiniteElement surface heat balance algorithms
+       \note A minimum of 12 is suggested for simulations involving a Vegetated Roof (Material:RoofVegetation).
+       \default 6
+       \type integer
+       \minimum 1
+       \maximum 60
+
+ConvergenceLimits,
+       \memo Specifies limits on HVAC system simulation timesteps and iterations.
+       \memo This item is an advanced feature that should be used only with caution.
+       \unique-object
+  N1 , \field Minimum System Timestep
+       \units minutes
+       \type integer
+       \note 0 sets the minimum to the zone timestep (ref: Timestep)
+       \note 1 is normal (ratchet down to 1 minute)
+       \note setting greater than zone timestep (in minutes) will effectively set to zone timestep
+       \minimum 0
+       \maximum 60
+  N2 , \field Maximum HVAC Iterations
+       \type integer
+       \default 20
+       \minimum 1
+  N3 , \field Minimum Plant Iterations
+       \note Controls the minimum number of plant system solver iterations within a single HVAC iteration
+       \note Larger values will increase runtime but might improve solution accuracy for complicated plant systems
+       \note Complex plants include: several interconnected loops, heat recovery, thermal load following generators, etc.
+       \type integer
+       \default 2
+       \minimum 1
+  N4 ; \field Maximum Plant Iterations
+       \note Controls the maximum number of plant system solver iterations within a single HVAC iteration
+       \note Smaller values might decrease runtime but could decrease solution accuracy for complicated plant systems
+       \type integer
+       \default 8
+       \minimum 2
+
+HVACSystemRootFindingAlgorithm,
+       \memo Specifies a HVAC system solver algorithm to find a root
+       \unique-object
+  A1 , \field Algorithm
+       \type choice
+       \key RegulaFalsi
+       \key Bisection
+       \key BisectionThenRegulaFalsi
+       \key RegulaFalsiThenBisection
+       \key Alternation
+       \default RegulaFalsi
+  N1 ; \field Number of Iterations Before Algorithm Switch
+       \note This field is used when RegulaFalsiThenBisection or BisectionThenRegulaFalsi is
+       \note entered. When iteration number is greater than the value, algorithm switches.
+       \type integer
+       \default 5
+
+\group Compliance Objects
+
+Compliance:Building,
+       \memo Building level inputs related to compliance to building standards, building codes, and beyond energy code programs.
+       \unique-object
+       \min-fields 1
+  N1;  \field Building Rotation for Appendix G
+       \note Additional degrees of rotation to be used with the requirement in ASHRAE Standard 90.1 Appendix G
+       \note that states that the baseline building should be rotated in four directions.
+       \units deg
+       \type real
+       \default 0.0
+
+\group Location and Climate
+
+Site:Location,
+       \memo Specifies the building's location. Only one location is allowed.
+       \memo Weather data file location, if it exists, will override this object.
+       \unique-object
+       \min-fields 5
+  A1 , \field Name
+       \required-field
+       \type alpha
+  N1 , \field Latitude
+       \units deg
+       \minimum -90.0
+       \maximum +90.0
+       \default 0.0
+       \note + is North, - is South, degree minutes represented in decimal (i.e. 30 minutes is .5)
+       \type real
+  N2 , \field Longitude
+       \units deg
+       \minimum -180.0
+       \maximum +180.0
+       \default 0.0
+       \note - is West, + is East, degree minutes represented in decimal (i.e. 30 minutes is .5)
+       \type real
+  N3 , \field Time Zone
+       \note basic these limits on the WorldTimeZone Map (2003)
+       \units hr
+       \minimum -12.0
+       \maximum +14.0
+       \default 0.0
+       \note  Time relative to GMT. Decimal hours.
+       \type real
+  N4 ; \field Elevation
+       \units m
+       \minimum -300.0
+       \maximum< 8900.0
+       \default 0.0
+       \type real
+
+Site:VariableLocation,
+       \memo Captures the scheduling of a moving/reorienting building, or more likely a vessel
+       \unique-object
+       \min-fields 1
+  A1 , \field Name
+       \required-field
+       \type alpha
+  A2 , \field Building Location Latitude Schedule
+       \note The name of a schedule that defines the latitude of the building at any time.
+       \note If not entered, the latitude defined in the Site:Location, or the default
+       \note latitude, will be used for the entirety of the simulation
+       \type object-list
+       \object-list ScheduleNames
+  A3 , \field Building Location Longitude Schedule
+       \note The name of a schedule that defines the longitude of the building at any time.
+       \note If not entered, the longitude defined in the Site:Location, or the default
+       \note longitude, will be used for the entirety of the simulation
+       \type object-list
+       \object-list ScheduleNames
+  A4 ; \field Building Location Orientation Schedule
+       \note The name of a schedule that defines the orientation of the building at any time.
+       \note This orientation is based on a change from the original orientation. -- NEED TO REFINE THIS
+       \note If not entered, the original orientation will be used for the entirety of the simulation
+       \type object-list
+       \object-list ScheduleNames
+
+SizingPeriod:DesignDay,
+      \memo The design day object creates the parameters for the program to create
+      \memo the 24 hour weather profile that can be used for sizing as well as
+      \memo running to test the other simulation parameters. Parameters in this
+      \memo include a date (month and day), a day type (which uses the appropriate
+      \memo schedules for either sizing or simple tests), min/max temperatures,
+      \memo wind speeds, and solar radiation values.
+  A1, \field Name
+       \type alpha
+       \required-field
+       \reference RunPeriodsAndDesignDays
+  N1,  \field Month
+       \required-field
+       \minimum 1
+       \maximum 12
+       \type integer
+  N2,  \field Day of Month
+       \required-field
+       \minimum 1
+       \maximum 31
+       \type integer
+       \note must be valid for Month field
+  A2,  \field Day Type
+       \required-field
+       \note Day Type selects the schedules appropriate for this design day
+       \type choice
+       \key Sunday
+       \key Monday
+       \key Tuesday
+       \key Wednesday
+       \key Thursday
+       \key Friday
+       \key Saturday
+       \key Holiday
+       \key SummerDesignDay
+       \key WinterDesignDay
+       \key CustomDay1
+       \key CustomDay2
+  N3,  \field Maximum Dry-Bulb Temperature
+       \note This field is required when field "Dry-Bulb Temperature Range Modifier Type"
+       \note is not "TemperatureProfileSchedule".
+       \units C
+       \minimum -90
+       \maximum 70
+       \type real
+  N4,  \field Daily Dry-Bulb Temperature Range
+       \note Must still produce appropriate maximum dry-bulb (within range)
+       \note This field is not needed if Dry-Bulb Temperature Range Modifier Type
+       \note is "delta".
+       \units deltaC
+       \minimum 0
+       \default 0
+       \type real
+  A3,  \field Dry-Bulb Temperature Range Modifier Type
+       \note Type of modifier to the dry-bulb temperature calculated for the timestep
+       \type choice
+       \key MultiplierSchedule
+       \key DifferenceSchedule
+       \key TemperatureProfileSchedule
+       \key DefaultMultipliers
+       \default DefaultMultipliers
+  A4,  \field Dry-Bulb Temperature Range Modifier Day Schedule Name
+       \type object-list
+       \object-list DayScheduleNames
+       \note Only used when previous field is "MultiplierSchedule", "DifferenceSchedule" or
+       \note   "TemperatureProfileSchedule".
+       \note For type "MultiplierSchedule"  the hour/time interval values should specify
+       \note   the fraction (0-1) of the dry-bulb temperature range to be subtracted
+       \note   from the maximum dry-bulb temperature for each timestep in the day
+       \note For type "DifferenceSchedule" the values should specify a number to be subtracted
+       \note   from the maximum dry-bulb temperature for each timestep in the day.
+       \note Note that numbers in the difference schedule cannot be negative as that
+       \note   would result in a higher maximum than the maximum previously specified.
+       \note For type "TemperatureProfileSchedule" the values should specify the actual dry-bulb
+       \note   temperature for each timestep in the day.
+  A5,  \field Humidity Condition Type
+       \note values/schedules indicated here and in subsequent fields create the humidity
+       \note values in the 24 hour design day conditions profile.
+       \type choice
+       \key WetBulb
+       \key DewPoint
+       \key HumidityRatio
+       \key Enthalpy
+       \key RelativeHumiditySchedule
+       \key WetBulbProfileMultiplierSchedule
+       \key WetBulbProfileDifferenceSchedule
+       \key WetBulbProfileDefaultMultipliers
+       \default WetBulb
+  N5,  \field Wetbulb or DewPoint at Maximum Dry-Bulb
+       \note Wetbulb or dewpoint temperature coincident with the maximum temperature.
+       \note Required only if field Humidity Condition Type is "Wetbulb", "Dewpoint",
+       \note "WetBulbProfileMultiplierSchedule", "WetBulbProfileDifferenceSchedule",
+       \note or "WetBulbProfileDefaultMultipliers"
+       \type real
+       \units C
+  A6,  \field Humidity Condition Day Schedule Name
+       \type object-list
+       \object-list DayScheduleNames
+       \note Only used when Humidity Condition Type is "RelativeHumiditySchedule",
+       \note  "WetBulbProfileMultiplierSchedule", or "WetBulbProfileDifferenceSchedule"
+       \note For type "RelativeHumiditySchedule", the hour/time interval values should specify
+       \note   relative humidity (percent) from 0.0 to 100.0.
+       \note For type "WetBulbProfileMultiplierSchedule" the hour/time interval values should specify
+       \note   the fraction (0-1) of the wet-bulb temperature range to be subtracted from the
+       \note   maximum wet-bulb temperature for each timestep in the day (units = Fraction)
+       \note For type "WetBulbProfileDifferenceSchedule" the values should specify a number to be subtracted
+       \note   from the maximum wet-bulb temperature for each timestep in the day. (units = deltaC)
+  N6,  \field Humidity Ratio at Maximum Dry-Bulb
+       \note Humidity ratio coincident with the maximum temperature (constant humidity ratio throughout day).
+       \note Required only if field Humidity Condition Type is "HumidityRatio".
+       \type real
+       \units kgWater/kgDryAir
+  N7,  \field Enthalpy at Maximum Dry-Bulb
+       \note Enthalpy coincident with the maximum temperature.
+       \note Required only if field Humidity Condition Type is "Enthalpy".
+       \type real
+       \units J/kg
+  N8,  \field Daily Wet-Bulb Temperature Range
+       \units deltaC
+       \note Required only if Humidity Condition Type = "WetbulbProfileMultiplierSchedule" or
+       \note "WetBulbProfileDefaultMultipliers"
+  N9,  \field Barometric Pressure
+       \note This field's value is also checked against the calculated "standard barometric pressure"
+       \note for the location.  If out of range (>10%) or blank, then is replaced by standard value.
+       \units Pa
+       \minimum 31000
+       \maximum 120000
+       \type real
+       \ip-units inHg
+  N10, \field Wind Speed
+       \required-field
+       \units m/s
+       \minimum 0
+       \maximum 40
+       \ip-units miles/hr
+       \type real
+  N11, \field Wind Direction
+       \required-field
+       \units deg
+       \minimum 0
+       \maximum 360
+       \note North=0.0 East=90.0
+       \note 0 and 360 are the same direction.
+       \type real
+  A7,  \field Rain Indicator
+       \note Yes is raining (all day), No is not raining
+       \type choice
+       \key Yes
+       \key No
+       \default No
+  A8,  \field Snow Indicator
+       \type choice
+       \key Yes
+       \key No
+       \default No
+       \note Yes is Snow on Ground, No is no Snow on Ground
+  A9,  \field Daylight Saving Time Indicator
+       \note Yes -- use schedules modified for Daylight Saving Time Schedules.
+       \note No - do not use schedules modified for Daylight Saving Time Schedules
+       \type choice
+       \key Yes
+       \key No
+       \default No
+  A10, \field Solar Model Indicator
+       \type choice
+       \key ASHRAEClearSky
+       \key ZhangHuang
+       \key Schedule
+       \key ASHRAETau
+       \key ASHRAETau2017
+       \default ASHRAEClearSky
+  A11, \field Beam Solar Day Schedule Name
+       \note if Solar Model Indicator = Schedule, then beam schedule name (for day)
+       \type object-list
+       \object-list DayScheduleNames
+  A12, \field Diffuse Solar Day Schedule Name
+       \note if Solar Model Indicator = Schedule, then diffuse schedule name (for day)
+       \type object-list
+       \object-list DayScheduleNames
+  N12, \field ASHRAE Clear Sky Optical Depth for Beam Irradiance (taub)
+       \units dimensionless
+       \note Required if Solar Model Indicator = ASHRAETau or ASHRAETau2017
+       \note ASHRAETau2017 solar model can be used with 2013 and 2017 HOF matching taub
+       \minimum 0
+       \maximum 1.2
+       \default 0
+  N13, \field ASHRAE Clear Sky Optical Depth for Diffuse Irradiance (taud)
+       \units dimensionless
+       \note Required if Solar Model Indicator = ASHRAETau or ASHRAETau2017
+       \note ASHRAETau2017 solar model can be used with 2013 and 2017 HOF matching taud
+       \minimum 0
+       \maximum 3
+       \default 0
+  N14; \field Sky Clearness
+       \note Used if Sky Model Indicator = ASHRAEClearSky or ZhangHuang
+       \minimum 0.0
+       \maximum 1.2
+       \default 0.0
+       \note 0.0 is totally unclear, 1.0 is totally clear
+       \type real
+
+SizingPeriod:WeatherFileDays,
+       \memo Use a weather file period for design sizing calculations.
+  A1 , \field Name
+       \reference RunPeriodsAndDesignDays
+       \required-field
+       \note user supplied name for reporting
+  N1 , \field Begin Month
+       \required-field
+       \minimum 1
+       \maximum 12
+       \type integer
+  N2 , \field Begin Day of Month
+       \required-field
+       \minimum 1
+       \maximum 31
+       \type integer
+  N3 , \field End Month
+       \required-field
+       \minimum 1
+       \maximum 12
+       \type integer
+  N4 , \field End Day of Month
+       \required-field
+       \minimum 1
+       \maximum 31
+       \type integer
+  A2 , \field Day of Week for Start Day
+       \note  =[|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|SummerDesignDay|WinterDesignDay|
+       \note    |CustomDay1|CustomDay2];
+       \note if you use SummerDesignDay or WinterDesignDay or the CustomDays then this will apply
+       \note to the whole period; other days (i.e., Monday) will signify a start day and
+       \note normal sequence of subsequent days
+       \default Monday
+       \type choice
+       \key Sunday
+       \key Monday
+       \key Tuesday
+       \key Wednesday
+       \key Thursday
+       \key Friday
+       \key Saturday
+       \key SummerDesignDay
+       \key WinterDesignDay
+       \key CustomDay1
+       \key CustomDay2
+  A3,  \field Use Weather File Daylight Saving Period
+       \note If yes or blank, use daylight saving period as specified on Weatherfile.
+       \note If no, do not use the daylight saving period as specified on the Weatherfile.
+       \type choice
+       \default Yes
+       \key Yes
+       \key No
+  A4;  \field Use Weather File Rain and Snow Indicators
+       \type choice
+       \key Yes
+       \key No
+       \default Yes
+
+SizingPeriod:WeatherFileConditionType,
+       \memo Use a weather file period for design sizing calculations.
+       \memo EPW weather files are created with typical and extreme periods
+       \memo created heuristically from the weather file data.  For more
+       \memo details on these periods, see AuxiliaryPrograms document.
+  A1 , \field Name
+       \required-field
+       \reference RunPeriodsAndDesignDays
+       \note user supplied name for reporting
+  A2 , \field Period Selection
+       \required-field
+       \retaincase
+       \note Following is a list of all possible types of Extreme and Typical periods that
+       \note might be identified in the Weather File. Not all possible types are available
+       \note for all weather files.
+       \type choice
+       \key SummerExtreme
+       \key SummerTypical
+       \key WinterExtreme
+       \key WinterTypical
+       \key AutumnTypical
+       \key SpringTypical
+       \key WetSeason
+       \key DrySeason
+       \key NoDrySeason
+       \key NoWetSeason
+       \key TropicalHot
+       \key TropicalCold
+       \key NoDrySeasonMax
+       \key NoDrySeasonMin
+       \key NoWetSeasonMax
+       \key NoWetSeasonMin
+  A3 , \field Day of Week for Start Day
+       \note  =[|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|SummerDesignDay|WinterDesignDay|
+       \note    |CustomDay1|CustomDay2];
+       \note if you use SummerDesignDay or WinterDesignDay or the CustomDays then this will apply
+       \note to the whole period; other days (i.e., Monday) will signify a start day and
+       \note normal sequence of subsequent days
+       \default Monday
+       \type choice
+       \key Sunday
+       \key Monday
+       \key Tuesday
+       \key Wednesday
+       \key Thursday
+       \key Friday
+       \key Saturday
+       \key SummerDesignDay
+       \key WinterDesignDay
+       \key CustomDay1
+       \key CustomDay2
+  A4,  \field Use Weather File Daylight Saving Period
+       \note If yes or blank, use daylight saving period as specified on Weatherfile.
+       \note If no, do not use the daylight saving period as specified on the Weatherfile.
+       \type choice
+       \default Yes
+       \key Yes
+       \key No
+  A5;  \field Use Weather File Rain and Snow Indicators
+       \type choice
+       \key Yes
+       \key No
+       \default Yes
+
+RunPeriod,
+       \memo Specify a range of dates and other parameters for a simulation.
+       \memo Multiple run periods may be input, but they may not overlap.
+       \min-fields 7
+  A1 , \field Name
+       \required-field
+       \reference RunPeriodsAndDesignDays
+       \note descriptive name (used in reporting mainly)
+       \note Cannot be not blank and must be unique
+  N1 , \field Begin Month
+       \required-field
+       \minimum 1
+       \maximum 12
+       \type integer
+  N2 , \field Begin Day of Month
+       \required-field
+       \minimum 1
+       \maximum 31
+       \type integer
+  N3,  \field Begin Year
+       \note Start year of the simulation, if this field is specified it must agree with the Day of Week for Start Day
+       \note If this field is blank, the year will be selected to match the weekday, which is Sunday if not specified
+  N4 , \field End Month
+       \required-field
+       \minimum 1
+       \maximum 12
+       \type integer
+  N5 , \field End Day of Month
+       \required-field
+       \minimum 1
+       \maximum 31
+       \type integer
+  N6,  \field End Year
+       \note end year of simulation, if specified
+  A2 , \field Day of Week for Start Day
+       \note =[Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday];
+       \note If no year is input, this field will default to Sunday
+       \note If a year is input and this field is blank, the correct weekday is determined
+       \type choice
+       \key Sunday
+       \key Monday
+       \key Tuesday
+       \key Wednesday
+       \key Thursday
+       \key Friday
+       \key Saturday
+  A3,  \field Use Weather File Holidays and Special Days
+       \note If yes or blank, use holidays as specified on Weatherfile.
+       \note If no, do not use the holidays specified on the Weatherfile.
+       \note Note: You can still specify holidays/special days using the RunPeriodControl:SpecialDays object(s).
+       \type choice
+       \default Yes
+       \key Yes
+       \key No
+  A4,  \field Use Weather File Daylight Saving Period
+       \note If yes or blank, use daylight saving period as specified on Weatherfile.
+       \note If no, do not use the daylight saving period as specified on the Weatherfile.
+       \type choice
+       \default Yes
+       \key Yes
+       \key No
+  A5,  \field Apply Weekend Holiday Rule
+       \note if yes and single day holiday falls on weekend, "holiday" occurs on following Monday
+       \type choice
+       \key Yes
+       \key No
+       \default No
+  A6,  \field Use Weather File Rain Indicators
+       \type choice
+       \key Yes
+       \key No
+       \default Yes
+  A7,  \field Use Weather File Snow Indicators
+       \type choice
+       \key Yes
+       \key No
+       \default Yes
+  A8;  \field Treat Weather as Actual
+       \type choice
+       \key Yes
+       \key No
+       \default No
+
+RunPeriodControl:SpecialDays,
+     \min-fields 4
+     \memo This object sets up holidays/special days to be used during weather file
+     \memo run periods.  (These are not used with SizingPeriod:* objects.)
+     \memo Depending on the value in the run period, days on the weather file may also
+     \memo be used.  However, the weather file specification will take precedence over
+     \memo any specification shown here.  (No error message on duplicate days or overlapping
+     \memo days).
+ A1, \field Name
+     \required-field
+ A2, \field Start Date
+     \required-field
+     \note  Dates can be several formats:
+     \note  <number>/<number>  (month/day)
+     \note  <number> <Month>
+     \note  <Month> <number>
+     \note <Nth> <Weekday> in <Month)
+     \note Last <WeekDay> in <Month>
+     \note <Month> can be January, February, March, April, May, June, July, August, September, October, November, December
+     \note Months can be the first 3 letters of the month
+     \note <Weekday> can be Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday
+     \note <Nth> can be 1 or 1st, 2 or 2nd, etc. up to 5(?)
+ N1, \field Duration
+     \units days
+     \minimum 1
+     \maximum 366
+     \default 1
+ A3; \field Special Day Type
+       \note Special Day Type selects the schedules appropriate for each day so labeled
+       \type choice
+       \key Holiday
+       \key SummerDesignDay
+       \key WinterDesignDay
+       \key CustomDay1
+       \key CustomDay2
+       \default Holiday
+
+RunPeriodControl:DaylightSavingTime,
+     \unique-object
+     \min-fields 2
+     \memo This object sets up the daylight saving time period for any RunPeriod.
+     \memo Ignores any daylight saving time period on the weather file and uses this definition.
+     \memo These are not used with SizingPeriod:DesignDay objects.
+     \memo Use with SizingPeriod:WeatherFileDays object can be controlled in that object.
+ A1, \field Start Date
+     \required-field
+ A2; \field End Date
+     \required-field
+     \note  Dates can be several formats:
+     \note  <number>/<number>  (month/day)
+     \note  <number> <Month>
+     \note  <Month> <number>
+     \note <Nth> <Weekday> in <Month)
+     \note Last <WeekDay> in <Month>
+     \note <Month> can be January, February, March, April, May, June, July, August, September, October, November, December
+     \note Months can be the first 3 letters of the month
+     \note <Weekday> can be Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday
+     \note <Nth> can be 1 or 1st, 2 or 2nd, etc. up to 5(?)
+
+WeatherProperty:SkyTemperature,
+       \memo This object is used to override internal sky temperature calculations.
+  A1,  \field Name
+       \note blank in this field will apply to all run periods (that is, all objects=
+       \note SizingPeriod:WeatherFileDays, SizingPeriod:WeatherFileConditionType or RunPeriod
+       \note otherwise, this name must match one of the environment object names.
+       \type object-list
+       \object-list RunPeriodsAndDesignDays
+  A2,  \field Calculation Type
+       \required-field
+       \type choice
+       \key ScheduleValue
+       \key DifferenceScheduleDryBulbValue
+       \key DifferenceScheduleDewPointValue
+  A3;  \field Schedule Name
+       \required-field
+       \note if name matches a SizingPeriod:DesignDay, put in a day schedule of this name
+       \note if name is for a SizingPeriod:WeatherFileDays, SizingPeriod:WeatherFileConditionType or
+       \note RunPeriod, put in a full year schedule that covers the appropriate days.
+       \type object-list
+       \object-list DayScheduleNames
+       \object-list ScheduleNames
+
+Site:WeatherStation,
+       \unique-object
+       \memo This object should only be used for non-standard weather data.  Standard weather data
+       \memo such as TMY2, IWEC, and ASHRAE design day data are all measured at the
+       \memo default conditions and do not require this object.
+  N1 , \field Wind Sensor Height Above Ground
+       \type real
+       \units m
+       \default 10.0
+       \minimum> 0.0
+  N2 , \field Wind Speed Profile Exponent
+       \type real
+       \default 0.14
+       \minimum 0.0
+  N3 , \field Wind Speed Profile Boundary Layer Thickness
+       \type real
+       \units m
+       \default 270.0
+       \minimum 0.0
+  N4 ; \field Air Temperature Sensor Height Above Ground
+       \type real
+       \units m
+       \default 1.5
+       \minimum 0.0
+
+Site:HeightVariation,
+       \unique-object
+       \memo This object is used if the user requires advanced control over height-dependent
+       \memo variations in wind speed and temperature.  When this object is not present, the default model
+       \memo for temperature dependence on height is used, and the wind speed is modeled according
+       \memo to the Terrain field of the BUILDING object.
+  N1 , \field Wind Speed Profile Exponent
+       \note Set to zero for no wind speed dependence on height.
+       \type real
+       \default 0.22
+       \minimum 0.0
+  N2 , \field Wind Speed Profile Boundary Layer Thickness
+       \type real
+       \units m
+       \default 370.0
+       \minimum> 0.0
+  N3 ; \field Air Temperature Gradient Coefficient
+       \note Set to zero for no air temperature dependence on height.
+       \type real
+       \units K/m
+       \default 0.0065
+       \minimum 0.0
+
+Site:GroundTemperature:BuildingSurface,
+       \memo These temperatures are specifically for those surfaces that have the outside environment
+       \memo of "Ground".  Documentation about what values these should be is located in the
+       \memo Auxiliary programs document (Ground Heat Transfer) as well as the InputOutput Reference.
+       \memo CAUTION - Do not use the "undisturbed" ground temperatures from the weather data.
+       \memo These values are too extreme for the soil under a conditioned building.
+       \memo For best results, use the Slab or Basement program to calculate custom monthly
+       \memo average ground temperatures (see Auxiliary Programs).  For typical commercial
+       \memo buildings in the USA, a reasonable default value is 2C less than the average indoor space temperature.
+       \unique-object
+       \min-fields 12
+       \format singleLine
+  N1 , \field January Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N2 , \field February Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N3 , \field March Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N4 , \field April Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N5 , \field May Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N6 , \field June Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N7 , \field July Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N8 , \field August Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N9 , \field September Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N10, \field October Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N11, \field November Ground Temperature
+       \units C
+       \type real
+       \default 18
+  N12; \field December Ground Temperature
+       \units C
+       \type real
+       \default 18
+
+Site:GroundTemperature:FCfactorMethod,
+       \memo These temperatures are specifically for underground walls and ground floors
+       \memo defined with the C-factor and F-factor methods, and should be close to the
+       \memo monthly average outdoor air temperature delayed by 3 months for the location.
+       \unique-object
+       \min-fields 12
+       \format singleLine
+  N1 , \field January Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N2 , \field February Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N3 , \field March Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N4 , \field April Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N5 , \field May Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N6 , \field June Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N7 , \field July Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N8 , \field August Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N9 , \field September Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N10, \field October Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N11, \field November Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N12; \field December Ground Temperature
+       \units C
+       \type real
+       \default 13
+
+Site:GroundTemperature:Shallow,
+       \memo These temperatures are specifically for the Surface Ground Heat Exchanger and
+       \memo should probably be close to the average outdoor air temperature for the location.
+       \memo They are not used in other models.
+       \unique-object
+       \min-fields 12
+       \format singleLine
+  N1 , \field January Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N2 , \field February Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N3 , \field March Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N4 , \field April Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N5 , \field May Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N6 , \field June Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N7 , \field July Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N8 , \field August Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N9 , \field September Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N10, \field October Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N11, \field November Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+  N12; \field December Surface Ground Temperature
+       \units C
+       \type real
+       \default 13
+
+Site:GroundTemperature:Deep,
+       \memo These temperatures are specifically for the ground heat exchangers that would use
+       \memo "deep" (3-4 m depth) ground temperatures for their heat source.
+       \memo They are not used in other models.
+       \unique-object
+       \min-fields 12
+       \format singleLine
+  N1 , \field January Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N2 , \field February Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N3 , \field March Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N4 , \field April Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N5 , \field May Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N6 , \field June Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N7 , \field July Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N8 , \field August Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N9 , \field September Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N10, \field October Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N11, \field November Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+  N12; \field December Deep Ground Temperature
+       \units C
+       \type real
+       \default 16
+
+Site:GroundTemperature:Undisturbed:FiniteDifference,
+       \memo Undisturbed ground temperature object using a
+       \memo detailed finite difference 1-D model
+       \min-fields 7
+  A1,  \field Name
+       \required-field
+       \reference UndisturbedGroundTempModels
+  N1,  \field Soil Thermal Conductivity
+       \required-field
+       \type real
+       \units W/m-K
+       \minimum> 0.0
+  N2,  \field Soil Density
+       \required-field
+       \type real
+       \units kg/m3
+       \minimum> 0.0
+  N3,  \field Soil Specific Heat
+       \required-field
+       \type real
+       \units J/kg-K
+       \minimum> 0.0
+  N4,  \field Soil Moisture Content Volume Fraction
+       \type real
+       \units percent
+       \minimum 0
+       \maximum 100
+       \default 30
+  N5,  \field Soil Moisture Content Volume Fraction at Saturation
+       \type real
+       \units percent
+       \minimum 0
+       \maximum 100
+       \default 50
+   N6; \field Evapotranspiration Ground Cover Parameter
+       \type real
+       \units dimensionless
+       \minimum 0
+       \maximum 1.5
+       \default 0.4
+       \note This specifies the ground cover effects during evapotranspiration
+       \note  calculations.  The value roughly represents the following cases:
+       \note  = 0   : concrete or other solid, non-permeable ground surface material
+       \note  = 0.5 : short grass, much like a manicured lawn
+       \note  = 1   : standard reference state (12 cm grass)
+       \note  = 1.5 : wild growth
+
+Site:GroundTemperature:Undisturbed:KusudaAchenbach,
+       \memo Undisturbed ground temperature object using the
+       \memo Kusuda-Achenbach 1965 correlation.
+       \min-fields 7
+  A1,  \field Name
+       \required-field
+       \reference UndisturbedGroundTempModels
+  N1,  \field Soil Thermal Conductivity
+       \required-field
+       \type real
+       \units W/m-K
+       \minimum> 0.0
+  N2,  \field Soil Density
+       \required-field
+       \type real
+       \units kg/m3
+       \minimum> 0.0
+  N3,  \field Soil Specific Heat
+       \required-field
+       \type real
+       \units J/kg-K
+       \minimum> 0.0
+  N4,  \field Average Soil Surface Temperature
+       \type real
+       \units C
+       \note Annual average surface temperature
+       \note If left blank the Site:GroundTemperature:Shallow object must be included in the input
+       \note The soil temperature, amplitude, and phase shift must all be included or omitted together
+  N5,  \field Average Amplitude of Surface Temperature
+       \type real
+       \units deltaC
+       \minimum 0
+       \note Annual average surface temperature variation from average.
+       \note If left blank the Site:GroundTemperature:Shallow object must be included in the input
+       \note The soil temperature, amplitude, and phase shift must all be included or omitted together
+  N6;  \field Phase Shift of Minimum Surface Temperature
+       \type real
+       \units days
+       \minimum 0
+       \maximum< 365
+       \note The phase shift of minimum surface temperature, or the day
+       \note of the year when the minimum surface temperature occurs.
+       \note If left blank the Site:GroundTemperature:Shallow object must be included in the input
+       \note The soil temperature, amplitude, and phase shift must all be included or omitted together
+
+Site:GroundTemperature:Undisturbed:Xing,
+       \memo Undisturbed ground temperature object using the
+       \memo Xing 2014 2 harmonic parameter model.
+       \min-fields 9
+  A1,  \field Name
+       \required-field
+       \reference UndisturbedGroundTempModels
+  N1,  \field Soil Thermal Conductivity
+       \required-field
+       \type real
+       \units W/m-K
+       \minimum> 0.0
+  N2,  \field Soil Density
+       \required-field
+       \type real
+       \units kg/m3
+       \minimum> 0.0
+  N3,  \field Soil Specific Heat
+       \required-field
+       \type real
+       \units J/kg-K
+       \minimum> 0.0
+  N4,  \field Average Soil Surface Tempeature
+       \required-field
+       \type real
+       \units C
+  N5,  \field Soil Surface Temperature Amplitude 1
+       \required-field
+       \type real
+       \units deltaC
+  N6,  \field Soil Surface Temperature Amplitude 2
+       \required-field
+       \type real
+       \units deltaC
+  N7,  \field Phase Shift of Temperature Amplitude 1
+       \required-field
+       \type real
+       \units days
+       \maximum< 365
+  N8;  \field Phase Shift of Temperature Amplitude 2
+       \required-field
+       \type real
+       \units days
+       \maximum< 365
+
+Site:GroundDomain:Slab,
+        \memo Ground-coupled slab model for on-grade and
+        \memo in-grade cases with or without insulation.
+   A1,  \field Name
+        \required-field
+   N1,  \field Ground Domain Depth
+        \type real
+        \default 10
+        \units m
+        \minimum> 0.0
+   N2,  \field Aspect Ratio
+        \type real
+        \default 1
+   N3,  \field Perimeter Offset
+        \type real
+        \default 5
+        \units m
+        \minimum> 0.0
+   N4,  \field Soil Thermal Conductivity
+        \type real
+        \default 1.5
+        \units W/m-K
+        \minimum> 0.0
+   N5,  \field Soil Density
+        \type real
+        \default 2800
+        \units kg/m3
+        \minimum> 0.0
+   N6,  \field Soil Specific Heat
+        \type real
+        \default 850
+        \units J/kg-K
+        \minimum> 0.0
+   N7,  \field Soil Moisture Content Volume Fraction
+        \type real
+        \units percent
+        \minimum 0
+        \maximum 100
+        \default 30
+   N8,  \field Soil Moisture Content Volume Fraction at Saturation
+        \type real
+        \units percent
+        \minimum 0
+        \maximum 100
+        \default 50
+   A2,  \field Undisturbed Ground Temperature Model Type
+        \required-field
+        \type choice
+        \key Site:GroundTemperature:Undisturbed:FiniteDifference
+        \key Site:GroundTemperature:Undisturbed:KusudaAchenbach
+        \key Site:GroundTemperature:Undisturbed:Xing
+   A3,  \field Undisturbed Ground Temperature Model Name
+        \required-field
+        \type object-list
+        \object-list UndisturbedGroundTempModels
+   N9,  \field Evapotranspiration Ground Cover Parameter
+        \type real
+        \minimum 0
+        \maximum 1.5
+        \default 0.4
+        \note This specifies the ground cover effects during evapotranspiration
+        \note  calculations.  The value roughly represents the following cases:
+        \note  = 0   : concrete or other solid, non-permeable ground surface material
+        \note  = 0.5 : short grass, much like a manicured lawn
+        \note  = 1   : standard reference state (12 cm grass)
+        \note  = 1.5 : wild growth
+   A4,  \field Slab Boundary Condition Model Name
+        \required-field
+        \type object-list
+        \object-list OSCMNames
+   A5,  \field Slab Location
+        \required-field
+        \type choice
+        \key InGrade
+        \key OnGrade
+        \note This field specifies whether the slab is located "in-grade" or "on-grade"
+   A6,  \field Slab Material Name
+        \type object-list
+        \object-list MaterialName
+        \note Only applicable for the in-grade case
+   A7,  \field Horizontal Insulation
+        \type choice
+        \key Yes
+        \key No
+        \default No
+        \note This field specifies the presence of insulation beneath the slab.
+        \note Only required for in-grade case.
+   A8,  \field Horizontal Insulation Material Name
+        \type object-list
+        \object-list MaterialName
+        \note This field specifies the horizontal insulation material.
+   A9,  \field Horizontal Insulation Extents
+        \type choice
+        \key Full
+        \key Perimeter
+        \default Full
+        \note This field specifies whether the horizontal insulation fully insulates
+        \note the surface or is perimeter only insulation
+   N10, \field Perimeter Insulation Width
+        \type real
+        \units m
+        \minimum> 0.0
+        \note This field specifies the width of the underfloor perimeter insulation
+   A10, \field Vertical Insulation
+        \type choice
+        \key Yes
+        \key No
+        \default No
+        \note This field specifies the presence of vertical insulation at the slab edge.
+   A11, \field Vertical Insulation Material Name
+        \type object-list
+        \object-list MaterialName
+        \note This field specifies the vertical insulation material.
+   N11, \field Vertical Insulation Depth
+        \type real
+        \units m
+        \minimum> 0.0
+        \note Only used when including vertical insulation
+        \note This field specifies the depth of the vertical insulation
+   A12, \field Simulation Timestep
+        \type choice
+        \key Timestep
+        \key Hourly
+        \default Hourly
+        \note This field specifies the ground domain simulation timestep.
+   N12, \field Geometric Mesh Coefficient
+        \type real
+        \minimum 1.0
+        \maximum 2.0
+        \default 1.6
+   N13; \field Mesh Density Parameter
+        \type integer
+        \minimum 4
+        \default 6
+
+Site:GroundDomain:Basement,
+        \memo Ground-coupled basement model for simulating basements
+        \memo or other underground zones.
+   A1,  \field Name
+        \required-field
+   N1,  \field Ground Domain Depth
+        \type real
+        \default 10
+        \units m
+        \minimum> 0.0
+        \note The depth from ground surface to the deep ground boundary of the domain.
+   N2,  \field Aspect Ratio
+        \type real
+        \default 1
+        \note This defines the height to width ratio of the basement zone.
+   N3,  \field Perimeter Offset
+        \type real
+        \default 5
+        \units m
+        \minimum> 0.0
+        \note The distance from the basement wall edge to the edge of the ground domain
+   N4,  \field Soil Thermal Conductivity
+        \type real
+        \default 1.5
+        \units W/m-K
+        \minimum> 0.0
+   N5,  \field Soil Density
+        \type real
+        \default 2800
+        \units kg/m3
+        \minimum> 0.0
+   N6,  \field Soil Specific Heat
+        \type real
+        \default 850
+        \units J/kg-K
+        \minimum> 0.0
+   N7, \field Soil Moisture Content Volume Fraction
+        \type real
+        \units percent
+        \minimum 0
+        \maximum 100
+        \default 30
+   N8, \field Soil Moisture Content Volume Fraction at Saturation
+        \type real
+        \units percent
+        \minimum 0
+        \maximum 100
+        \default 50
+   A2,  \field Undisturbed Ground Temperature Model Type
+        \required-field
+        \type choice
+        \key Site:GroundTemperature:Undisturbed:FiniteDifference
+        \key Site:GroundTemperature:Undisturbed:KusudaAchenbach
+        \key Site:GroundTemperature:Undisturbed:Xing
+   A3,  \field Undisturbed Ground Temperature Model Name
+        \required-field
+        \type object-list
+        \object-list UndisturbedGroundTempModels
+   N9,  \field Evapotranspiration Ground Cover Parameter
+        \type real
+        \minimum 0
+        \maximum 1.5
+        \default 0.4
+        \note This specifies the ground cover effects during evapotranspiration
+        \note  calculations.  The value roughly represents the following cases:
+        \note  = 0   : concrete or other solid, non-permeable ground surface material
+        \note  = 0.5 : short grass, much like a manicured lawn
+        \note  = 1   : standard reference state (12 cm grass)
+        \note  = 1.5 : wild growth
+   A4,  \field Basement Floor Boundary Condition Model Name
+        \required-field
+        \type object-list
+        \object-list OSCMNames
+   A5,  \field Horizontal Insulation
+        \type choice
+        \key Yes
+        \key No
+        \default No
+        \note This field specifies the presence of insulation beneath the basement floor.
+   A6,  \field Horizontal Insulation Material Name
+        \type object-list
+        \object-list MaterialName
+   A7,  \field Horizontal Insulation Extents
+        \type choice
+        \key Perimeter
+        \key Full
+        \default Full
+        \note This field specifies whether the horizontal insulation fully insulates
+        \note the surface or is perimeter only insulation
+   N10, \field Perimeter Horizontal Insulation Width
+        \type real
+        \units m
+        \minimum> 0.0
+        \note Width of horizontal perimeter insulation measured from
+        \note foundation wall inside surface.
+   N11, \field Basement Wall Depth
+        \type real
+        \units m
+        \minimum> 0.0
+        \note Depth measured from ground surface.
+   A8,  \field Basement Wall Boundary Condition Model Name
+        \required-field
+        \type object-list
+        \object-list OSCMNames
+   A9,  \field Vertical Insulation
+        \type choice
+        \key Yes
+        \key No
+        \default No
+   A10, \field Basement Wall Vertical Insulation Material Name
+        \type object-list
+        \object-list MaterialName
+   N12, \field Vertical Insulation Depth
+        \type real
+        \units m
+        \minimum> 0.0
+        \note Depth measured from the ground surface.
+   A11, \field Simulation Timestep
+        \type choice
+        \key Timestep
+        \key Hourly
+        \default Hourly
+        \note This field specifies the basement domain simulation interval.
+   N13; \field Mesh Density Parameter
+        \type integer
+        \default 4
+        \minimum 2
+
+Site:GroundReflectance,
+        \memo Specifies the ground reflectance values used to calculate ground reflected solar.
+        \memo The ground reflectance can be further modified when snow is on the ground
+        \memo by Site:GroundReflectance:SnowModifier.
+  \unique-object
+  \min-fields 12
+  \format singleLine
+  N1 , \field January Ground Reflectance
+        \default 0.2
+        \type real
+        \minimum 0.0
+        \maximum 1.0
+        \units dimensionless
+   N2 , \field February Ground Reflectance
+        \default 0.2
+        \type real
+        \minimum 0.0
+        \maximum 1.0
+        \units dimensionless
+   N3 , \field March Ground Reflectance
+        \default 0.2
+        \type real
+        \minimum 0.0
+        \maximum 1.0
+        \units dimensionless
+   N4 , \field April Ground Reflectance
+        \default 0.2
+        \type real
+        \minimum 0.0
+        \maximum 1.0
+        \units dimensionless
+   N5 , \field May Ground Reflectance
+        \default 0.2
+        \type real
+        \minimum 0.0
+        \maximum 1.0
+        \units dimensionless
+   N6 , \field June Ground Reflectance
+        \default 0.2
+        \type real
+        \minimum 0.0
+        \maximum 1.0
+        \units dimensionless
+   N7 , \field July Ground Reflectance
+        \default 0.2
+        \type real
+        \minimum 0.0
+        \maximum 1.0
+        \units dimensionless
+   N8 , \field August Ground Reflectance
+        \default 0.2
+        \type real
+        \minimum 0.0
+        \maximum 1.0
+        \units dimensionless
+   N9 , \field September Ground Reflectance
+         \default 0.2
+         \type real
+         \minimum 0.0
+         \maximum 1.0
+         \units dimensionless
+   N10 , \field October Ground Reflectance
+         \default 0.2
+         \type real
+         \minimum 0.0
+         \maximum 1.0
+         \units dimensionless
+   N11 , \field November Ground Reflectance
+         \default 0.2
+         \type real
+         \minimum 0.0
+         \maximum 1.0
+         \units dimensionless
+   N12 ; \field December Ground Reflectance
+         \default 0.2
+         \type real
+         \minimum 0.0
+         \maximum 1.0
+         \units dimensionless
+
+Site:GroundReflectance:SnowModifier,
+      \memo Specifies ground reflectance multipliers when snow resident on the ground.
+      \memo These multipliers are applied to the "normal" ground reflectances specified
+      \memo in Site:GroundReflectance.
+  N1, \field Ground Reflected Solar Modifier
+  \minimum 0.0
+  \default 1.0
+    \note Value for modifying the "normal" ground reflectance when Snow is on ground
+    \note  when calculating the "Ground Reflected Solar Radiation Value"
+    \note  a value of 1.0 here uses the "normal" ground reflectance
+    \note  Ground Reflected Solar = (BeamSolar*CosSunZenith + DiffuseSolar)*GroundReflectance
+    \note    This would be further modified by the Snow Ground Reflectance Modifier when Snow was on the ground
+    \note    When Snow on ground, effective GroundReflectance is normal GroundReflectance*"Ground Reflectance Snow Modifier"
+    \note  Ground Reflectance achieved in this manner will be restricted to [0.0,1.0]
+  N2; \field Daylighting Ground Reflected Solar Modifier
+  \minimum 0.0
+  \default 1.0
+    \note Value for modifying the "normal" daylighting ground reflectance when Snow is on ground
+    \note  when calculating the "Ground Reflected Solar Radiation Value"
+    \note  a value of 1.0 here uses the "normal" ground reflectance
+    \note  Ground Reflected Solar = (BeamSolar*CosSunZenith + DiffuseSolar)*GroundReflectance
+    \note    This would be further modified by the Snow Ground Reflectance Modifier when Snow was on the ground
+    \note    When Snow on ground, effective GroundReflectance is normal GroundReflectance*"Daylighting Ground Reflectance Snow Modifier"
+    \note  Ground Reflectance achieved in this manner will be restricted to [0.0,1.0]
+
+Site:WaterMainsTemperature,
+       \memo Used to calculate water mains temperatures delivered by underground water main pipes.
+       \memo Water mains temperatures are a function of outdoor climate conditions
+       \memo and vary with time of year.
+  A1 , \field Calculation Method
+       \required-field
+       \type choice
+       \key Schedule
+       \key Correlation
+       \key CorrelationFromWeatherFile
+       \default CorrelationFromWeatherFile
+       \note If calculation method is CorrelationFromWeatherFile, the two numeric input
+       \note fields are ignored. Instead, EnergyPlus calculates them from weather file.
+  A2 , \field Temperature Schedule Name
+       \type object-list
+       \object-list ScheduleNames
+  N1 , \field Annual Average Outdoor Air Temperature
+       \note If calculation method is CorrelationFromWeatherFile or Schedule, this input
+       \note field is ignored.
+       \type real
+       \units C
+  N2 ; \field Maximum Difference In Monthly Average Outdoor Air Temperatures
+       \note If calculation method is CorrelationFromWeatherFile or Schedule, this input
+       \note field is ignored.
+       \type real
+       \units deltaC
+       \minimum 0
+
+Site:Precipitation,
+      \memo Used to describe the amount of water precipitation at the building site.
+      \memo Precipitation includes both rain and the equivalent water content of snow.
+  A1, \field Precipitation Model Type
+      \type choice
+      \key ScheduleAndDesignLevel
+  N1, \field Design Level for Total Annual Precipitation
+      \note meters of water per year used for design level
+      \units m/yr
+  A2, \field Precipitation Rates Schedule Name
+      \type object-list
+      \object-list ScheduleNames
+      \note Schedule values in meters of water per hour
+      \note values should be non-negative
+  N2; \field Average Total Annual Precipitation
+      \note meters of water per year from average weather statistics
+      \minimum 0
+      \units m/yr
+
+RoofIrrigation,
+      \memo Used to describe the amount of irrigation on the ecoroof surface over the course
+      \memo of the simulation runperiod.
+  A1, \field Irrigation Model Type
+      \type choice
+      \key Schedule
+      \key SmartSchedule
+      \note SmartSchedule will not allow irrigation when soil is already moist.
+      \note Current threshold set at 30% of saturation.
+  A2, \field Irrigation Rate Schedule Name
+      \type object-list
+      \object-list ScheduleNames
+      \note Schedule values in meters of water per hour
+      \note values should be non-negative
+  N1; \field Irrigation Maximum Saturation Threshold
+      \note Used with SmartSchedule to set the saturation level at which no
+      \note irrigation is allowed.
+      \units percent
+      \minimum 0.0
+      \maximum 100.0
+      \default 40.0
+
+Site:SolarAndVisibleSpectrum,
+      \memo If this object is omitted, the default solar and visible spectrum data will be used.
+      \unique-object
+  A1, \field Name
+      \required-field
+      \type alpha
+  A2, \field Spectrum Data Method
+      \note The method specifies which of the solar and visible spectrum data to use in the calculations.
+      \note Choices: Default - existing hard-wired spectrum data in EnergyPlus.
+      \note UserDefined - user specified spectrum data referenced by the next two fields
+      \type choice
+      \key Default
+      \key UserDefined
+      \default Default
+  A3, \field Solar Spectrum Data Object Name
+      \type object-list
+      \object-list SpectrumDataNames
+  A4; \field Visible Spectrum Data Object Name
+      \type object-list
+      \object-list SpectrumDataNames
+
+Site:SpectrumData,
+      \min-fields 8
+      \memo Spectrum Data Type is followed by up to 107 sets of normal-incidence measured values of
+      \memo [wavelength, spectrum] for wavelengths covering the solar (0.25 to 2.5 microns) or visible
+      \memo spectrum (0.38 to 0.78 microns)
+      \extensible:2
+  A1, \field Name
+      \required-field
+      \type alpha
+      \reference SpectrumDataNames
+  A2, \field Spectrum Data Type
+      \required-field
+      \type choice
+      \key Solar
+      \key Visible
+  N1, \field Wavelength
+      \type real
+      \units micron
+  N2, \field Spectrum
+      \type real
+  N3, \field Wavelength
+      \type real
+      \units micron
+  N4, \field Spectrum
+      \type real
+  N5, \field Wavelength
+      \begin-extensible
+      \type real
+      \units micron
+  N6, \field Spectrum
+      \type real
+  N7, N8,       \note fields as indicated
+  N9, N10,      \note fields as indicated
+  N11, N12,     \note fields as indicated
+  N13, N14,     \note fields as indicated
+  N15, N16,     \note fields as indicated
+  N17, N18,     \note fields as indicated
+  N19, N20,     \note fields as indicated
+  N21, N22,     \note fields as indicated
+  N23, N24,     \note fields as indicated
+  N25, N26,     \note fields as indicated
+  N27, N28,     \note fields as indicated
+  N29, N30,     \note fields as indicated
+  N31, N32,     \note fields as indicated
+  N33, N34,     \note fields as indicated
+  N35, N36,     \note fields as indicated
+  N37, N38,     \note fields as indicated
+  N39, N40,     \note fields as indicated
+  N41, N42,     \note fields as indicated
+  N43, N44,     \note fields as indicated
+  N45, N46,     \note fields as indicated
+  N47, N48,     \note fields as indicated
+  N49, N50,     \note fields as indicated
+  N51, N52,     \note fields as indicated
+  N53, N54,     \note fields as indicated
+  N55, N56,     \note fields as indicated
+  N57, N58,     \note fields as indicated
+  N59, N60,     \note fields as indicated
+  N61, N62,     \note fields as indicated
+  N63, N64,     \note fields as indicated
+  N65, N66,     \note fields as indicated
+  N67, N68,     \note fields as indicated
+  N69, N70,     \note fields as indicated
+  N71, N72,     \note fields as indicated
+  N73, N74,     \note fields as indicated
+  N75, N76,     \note fields as indicated
+  N77, N78,     \note fields as indicated
+  N79, N80,     \note fields as indicated
+  N81, N82,     \note fields as indicated
+  N83, N84,     \note fields as indicated
+  N85, N86,     \note fields as indicated
+  N87, N88,     \note fields as indicated
+  N89, N90,     \note fields as indicated
+  N91, N92,     \note fields as indicated
+  N93, N94,     \note fields as indicated
+  N95, N96,     \note fields as indicated
+  N97, N98,     \note fields as indicated
+  N99, N100,    \note fields as indicated
+  N101, N102,   \note fields as indicated
+  N103, N104,   \note fields as indicated
+  N105, N106,   \note fields as indicated
+  N107, N108,   \note fields as indicated
+  N109, N110,   \note fields as indicated
+  N111, N112,   \note fields as indicated
+  N113, N114,   \note fields as indicated
+  N115, N116,   \note fields as indicated
+  N117, N118,   \note fields as indicated
+  N119, N120,   \note fields as indicated
+  N121, N122,   \note fields as indicated
+  N123, N124,   \note fields as indicated
+  N125, N126,   \note fields as indicated
+  N127, N128,   \note fields as indicated
+  N129, N130,   \note fields as indicated
+  N131, N132,   \note fields as indicated
+  N133, N134,   \note fields as indicated
+  N135, N136,   \note fields as indicated
+  N137, N138,   \note fields as indicated
+  N139, N140,   \note fields as indicated
+  N141, N142,   \note fields as indicated
+  N143, N144,   \note fields as indicated
+  N145, N146,   \note fields as indicated
+  N147, N148,   \note fields as indicated
+  N149, N150,   \note fields as indicated
+  N151, N152,   \note fields as indicated
+  N153, N154,   \note fields as indicated
+  N155, N156,   \note fields as indicated
+  N157, N158,   \note fields as indicated
+  N159, N160,   \note fields as indicated
+  N161, N162,   \note fields as indicated
+  N163, N164,   \note fields as indicated
+  N165, N166,   \note fields as indicated
+  N167, N168,   \note fields as indicated
+  N169, N170,   \note fields as indicated
+  N171, N172,   \note fields as indicated
+  N173, N174,   \note fields as indicated
+  N175, N176,   \note fields as indicated
+  N177, N178,   \note fields as indicated
+  N179, N180,   \note fields as indicated
+  N181, N182,   \note fields as indicated
+  N183, N184,   \note fields as indicated
+  N185, N186,   \note fields as indicated
+  N187, N188,   \note fields as indicated
+  N189, N190,   \note fields as indicated
+  N191, N192,   \note fields as indicated
+  N193, N194,   \note fields as indicated
+  N195, N196,   \note fields as indicated
+  N197, N198,   \note fields as indicated
+  N199, N200,   \note fields as indicated
+  N201, N202,   \note fields as indicated
+  N203, N204,   \note fields as indicated
+  N205, N206,   \note fields as indicated
+  N207, N208,   \note fields as indicated
+  N209, N210,   \note fields as indicated
+  N211, N212,   \note fields as indicated
+  N213, N214;   \note fields as indicated
