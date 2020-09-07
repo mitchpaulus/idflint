@@ -13,37 +13,40 @@ main :: IO ()
 main = do
     args <- getArgs
     let options = parseArgs args defaultLintOptions
-    if help options
-        then putStrLn "idf-lint\n\nUSAGE: ep-lint [options].."
-        else do
+    if help options then putStrLn "idf-lint\n\nUSAGE: ep-lint [options].."
+    else if parseIdd options then putStrLn "Parsing idd..."
+    else do
              let path = filepath options
              fileExists <- doesFileExist path
              if fileExists
              then do
                   idfFile <- TIO.readFile path
-                  TIO.putStrLn idfFile
+                  TIO.putStrLn $ lintIdf idfFile
+                  --TIO.putStrLn idfFile
              else putStrLn $ path ++ "Not found."
 
 parseArgs :: [String] -> EpLintOptions -> EpLintOptions
 parseArgs (x:xs) options
             | x == "-h" || x == "--help" = parseArgs xs (options { help = True })
+            | x == "-i" || x == "--idd"  = parseArgs xs (options { parseIdd = True })
             | otherwise                  = parseArgs xs (options { filepath = x })
 
 parseArgs [] options = options
 
 data EpLintOptions = EpLintOptions {
                                      help :: Bool,
-                                     filepath :: String
+                                     filepath :: String,
+                                     parseIdd :: Bool
                                    } deriving Show
 
-defaultLintOptions = EpLintOptions { help = False, filepath = "in.idf" }
+defaultLintOptions = EpLintOptions { help = False, filepath = "in.idf", parseIdd = False }
 
 
 removeCommentLine :: T.Text -> T.Text
-removeCommentLine line = T.takeWhile (/= '!') line
+removeCommentLine = T.takeWhile (/= '!')
 
 removeComments :: T.Text -> T.Text
-removeComments idfFile = (T.unlines . (map removeCommentLine) . T.lines) idfFile
+removeComments = T.unlines . (map removeCommentLine) . T.lines
 
 
 splitOnChar :: Char -> T.Text -> [T.Text]
@@ -53,21 +56,22 @@ splitOnChar char s = case T.dropWhile (== char) s of
                             where (w, s'') = T.break (== char) s'
 
 splitObjects :: T.Text -> [T.Text]
-splitObjects idfFile = splitOnChar ';' idfFile
+splitObjects = splitOnChar ';'
 
 splitFields :: T.Text -> [T.Text]
-splitFields idfObject = splitOnChar ',' idfObject
+splitFields = splitOnChar ','
 
 lexIdf :: T.Text -> [IdfObject]
 lexIdf idfFile =  fmap splitFields (splitObjects (removeComments idfFile))
 
 type IdfField  = T.Text
 type IdfObject = [IdfField]
+type IdfFile = [IdfObject]
 
 data LexResult = LexResult { lexResultLineNum :: Int, lexResultMessage :: T.Text }
 
 -- This signals a malformed field or object and should be considered a lexical error.
-newLineAfterField :: T.Text -> Bool
+newLineAfterField :: IdfField -> Bool
 newLineAfterField field =
     case T.find (== '\n') (T.dropWhile isSpace field) of
         Just _ -> True
@@ -75,6 +79,12 @@ newLineAfterField field =
 
 badFields = filter newLineAfterField (concat (lexIdf testFile))
 
+data LintResult = LintResult { lineNum :: Int, message :: T.Text }
+
+lintIdf :: T.Text -> T.Text
+lintIdf idfFile = T.unlines $ filter newLineAfterField (concat $ lexIdf idfFile)
+
+testFile :: T.Text
 testFile = T.unlines
  [
     "Building,",

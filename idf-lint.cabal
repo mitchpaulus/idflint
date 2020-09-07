@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8aae3185ba02410c612cc6d85e5b8743be26fdc3c4f46f165a04f39c2280c71f
+-- hash: fb3ac3f303b0cf12d477f9afad84e98fcc681e69ebb47737eb99bb02fcb782ce
 
 name:           idf-lint
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Idd
       Lib
       ObjectTypes
   other-modules:
