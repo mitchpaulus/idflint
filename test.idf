@@ -14,5 +14,5 @@ Building,
   0.04,                    !- Loads Convergence Tolerance Value
   0.4,                     !- Temperature Convergence Tolerance Value {deltaC}
   FullExterior,            !- Solar Distribution
-  45,                      !- Maximum Number of Warmup Days
-  6;                       !- Minimum Number of Warmup Days
+  -45,                      !- Maximum Number of Warmup Days
+  6e-8;                       !- Minimum Number of Warmup Days
