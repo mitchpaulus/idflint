@@ -1,0 +1,12 @@
+T__0=1
+T__1=2
+COMMENT=3
+FIELD_SEPARATOR=4
+OBJECT_TERMINATOR=5
+NUMERIC=6
+ALPHA=7
+WS=8
+'SimulationControl'=1
+'Building'=2
+','=4
+';'=5

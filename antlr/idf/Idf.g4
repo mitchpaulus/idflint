@@ -1,5 +1,9 @@
 grammar Idf;
 
+options {
+    language=CSharp;
+}
+
 idf : (COMMENT | object)* ;
 
 object : object_type FIELD_SEPARATOR COMMENT* fields ;
