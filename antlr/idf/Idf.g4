@@ -4,7 +4,7 @@ options {
     language=CSharp;
 }
 
-idf : (COMMENT | object)* ;
+idf : (COMMENT | object)* EOF;
 
 object : object_type FIELD_SEPARATOR COMMENT* fields ;
 
@@ -15,7 +15,7 @@ COMMENT :  '!' .*? '\n' ;
 FIELD_SEPARATOR   : ',' ;
 OBJECT_TERMINATOR : ';' ;
 
-NUMERIC : '-'?([1-9][0-9]*|'0')('.'[0-9]+)?([eE]'-'?[0-9]+)? ;
+NUMERIC : '-'?(([1-9][0-9]*|'0')('.'[0-9]+)? | ('.'[0-9]+))([eE]'-'?[0-9]+)? ;
 
 ALPHA : [a-zA-Z0-9] ~[,!]* [a-zA-Z0-9] ;
 
