@@ -2,3 +2,9 @@
 dist-newstyle/
 *~
 
+# Antlr files. I don't do Java
+*.tokens
+*.interp
+*.class
+*.java
+

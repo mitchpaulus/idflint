@@ -1,18 +1,20 @@
 grammar Idd;
 
+options {
+    language=CSharp;
+}
+
 idd : ( COMMENT | group | NEWLINE )* ;
 
 object : object_header fields;
 
 object_header : OBJECT_NAME FIELD_SEPARATOR (COMMENT | NEWLINE)* object_properties ;
 
-fields  : terminating_field
-        | field* terminating_field
-        ;
+fields  : field* terminating_field ;
 
-terminating_field : field_id OBJECT_TERMINATOR NEWLINE* object_properties ;
+terminating_field : field_id OBJECT_TERMINATOR NEWLINE* field_properties ;
 
-field : field_id FIELD_SEPARATOR NEWLINE* object_properties ;
+field : field_id FIELD_SEPARATOR NEWLINE* field_properties ;
 
 field_id : ALPHA_OPTION | NUMERIC_OPTION ;
 
@@ -20,36 +22,40 @@ group : GROUPSTATEMENT (object | COMMENT)* ;
 
 object_properties : (object_property | COMMENT)* ;
 
+field_properties : (field_property | COMMENT)* ;
+
 GROUPSTATEMENT : '\\group ' .*? NEWLINE  ;
 
+object_property :
+      EXTENSIBLE_STATEMENT
+    | FORMAT_STATEMENT
+    | MEMO_STATEMENT
+    | MIN_FIELDS_STATEMENT
+    | OBSOLETE_STATEMENT
+    | REQUIRED_OBJECT_STATEMENT
+    | UNIQUE_OBJECT_STATEMENT
+    ;
 
-object_property : 
+field_property : 
       AUTOCALCULATABLE_STATEMENT
     | AUTOSIZABLE_STATEMENT
     | BEGIN_EXTENSIBLE_STATEMENT
     | DEFAULT_STATEMENT
     | DEPRECATED_STATEMENT
-    | EXTENSIBLE_STATEMENT
     | EXTERNAL_LIST_STATEMENT
     | FIELD_STATEMENT
-    | FORMAT_STATEMENT
     | GROUP_STATEMENT
     | IP_UNITS_STATEMENT
     | KEY_STATEMENT
     | MAXIMUM_STATEMENT
-    | MEMO_STATEMENT
-    | MIN_FIELDS_STATEMENT
     | MINIMUM_STATEMENT
     | NOTE_STATEMENT
     | OBJECT_LIST_STATEMENT
-    | OBSOLETE_STATEMENT
     | REFERENCE_STATEMENT
     | REFERENCE_CLASS_NAME_STATEMENT
     | REQUIRED_FIELD_STATEMENT
-    | REQUIRED_OBJECT_STATEMENT
     | RETAINCASE_STATEMENT
     | TYPE_STATEMENT
-    | UNIQUE_OBJECT_STATEMENT
     | UNITS_STATEMENT
     | GENERAL_PROPERTY
     ;

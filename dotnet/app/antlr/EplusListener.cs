@@ -17,11 +17,10 @@ namespace Idf {
 
             var myFields = fields.field();
             
-            Console.WriteLine(typeName);
+            Console.WriteLine($"{typeName},");
 
-            var paddedFields = string.Join(",\n", myFields.ToList().Select(f => $"    {f.GetText()}")) + ";\n\n";
+            var paddedFields = string.Join(",\n", myFields.ToList().Select(f => $"    {f.GetText()}")) + ";\n";
             Console.WriteLine(paddedFields);
-
         }
     }
 }
