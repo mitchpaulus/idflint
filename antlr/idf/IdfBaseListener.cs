@@ -82,18 +82,6 @@ public partial class IdfBaseListener : IIdfListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitField([NotNull] IdfParser.FieldContext context) { }
-	/// <summary>
-	/// Enter a parse tree produced by <see cref="IdfParser.object_type"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void EnterObject_type([NotNull] IdfParser.Object_typeContext context) { }
-	/// <summary>
-	/// Exit a parse tree produced by <see cref="IdfParser.object_type"/>.
-	/// <para>The default implementation does nothing.</para>
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	public virtual void ExitObject_type([NotNull] IdfParser.Object_typeContext context) { }
 
 	/// <inheritdoc/>
 	/// <remarks>The default implementation does nothing.</remarks>

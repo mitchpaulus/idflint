@@ -70,14 +70,4 @@ public interface IIdfListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitField([NotNull] IdfParser.FieldContext context);
-	/// <summary>
-	/// Enter a parse tree produced by <see cref="IdfParser.object_type"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void EnterObject_type([NotNull] IdfParser.Object_typeContext context);
-	/// <summary>
-	/// Exit a parse tree produced by <see cref="IdfParser.object_type"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	void ExitObject_type([NotNull] IdfParser.Object_typeContext context);
 }

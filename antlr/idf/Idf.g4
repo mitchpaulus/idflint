@@ -6,22 +6,22 @@ options {
 
 idf : (COMMENT | object)* EOF;
 
-object : object_type FIELD_SEPARATOR COMMENT* fields ;
+object : ALPHA FIELD_SEPARATOR COMMENT* fields ;
 
-fields : field (FIELD_SEPARATOR COMMENT* field)* OBJECT_TERMINATOR COMMENT* ;
+fields : field? (FIELD_SEPARATOR COMMENT* field?)* OBJECT_TERMINATOR COMMENT* ;
 
 COMMENT :  '!' .*? '\n' ;
 
 FIELD_SEPARATOR   : ',' ;
 OBJECT_TERMINATOR : ';' ;
 
+/*OBJECT_TYPE : [a-zA-Z0-9:-]+ ;*/
+
 NUMERIC : '-'?(([1-9][0-9]*|'0')('.'[0-9]+)? | ('.'[0-9]+))([eE]'-'?[0-9]+)? ;
 
-ALPHA : [a-zA-Z0-9] ~[,!]* [a-zA-Z0-9] ;
+ALPHA : [a-zA-Z0-9] ~[,;!]* [a-zA-Z0-9] ;
 
 field : NUMERIC | ALPHA ;
 
-object_type : 'SimulationControl' | 'Building' ;
-
-WS : [ \t\n] -> skip ;
+WS : [ \t\r\n]+ -> skip ;
 

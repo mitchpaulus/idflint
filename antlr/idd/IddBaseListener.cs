@@ -178,6 +178,30 @@ public partial class IddBaseListener : IIddListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitField_property([NotNull] IddParser.Field_propertyContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="IddParser.min_fields_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMin_fields_statement([NotNull] IddParser.Min_fields_statementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="IddParser.min_fields_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMin_fields_statement([NotNull] IddParser.Min_fields_statementContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="IddParser.units_based_on_field_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterUnits_based_on_field_statement([NotNull] IddParser.Units_based_on_field_statementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="IddParser.units_based_on_field_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitUnits_based_on_field_statement([NotNull] IddParser.Units_based_on_field_statementContext context) { }
 
 	/// <inheritdoc/>
 	/// <remarks>The default implementation does nothing.</remarks>

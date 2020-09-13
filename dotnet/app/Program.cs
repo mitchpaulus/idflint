@@ -12,6 +12,12 @@ namespace dotnet
     {
         static void Main(string[] args)
         {
+            if (args.Any(arg => arg == "-h" || arg == "--help"))
+            {
+                Console.WriteLine("idf-lint\n\nUSAGE:\nidf-lint idf_file\n\nidf-lint lints your idf-file for great good.\n");
+                return;
+            }
+            
             TextReader reader = args.Any() ? new StreamReader(args[0]) : Console.In;
             
             AntlrInputStream input = new AntlrInputStream(reader);
@@ -40,9 +46,19 @@ namespace dotnet
                 return;
             }
             
-            Console.WriteLine(tree.ToStringTree(parser));
-
             ParseTreeWalker walker = new ParseTreeWalker();
+            IdfLintListener idfLintListener = new IdfLintListener();
+            walker.Walk(idfLintListener, tree);
+
+            if (idfLintListener.errors.Any())
+            {
+                foreach (IdfParseError error in idfLintListener.errors)
+                {
+                    Console.WriteLine(error.ErrorText());
+                }
+
+                return;
+            }
 
             walker.Walk(new EplusListener(), tree);
         }

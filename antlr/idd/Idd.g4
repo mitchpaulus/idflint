@@ -30,7 +30,7 @@ object_property :
       EXTENSIBLE_STATEMENT
     | FORMAT_STATEMENT
     | MEMO_STATEMENT
-    | MIN_FIELDS_STATEMENT
+    | min_fields_statement
     | OBSOLETE_STATEMENT
     | REQUIRED_OBJECT_STATEMENT
     | UNIQUE_OBJECT_STATEMENT
@@ -44,11 +44,12 @@ field_property :
     | DEPRECATED_STATEMENT
     | EXTERNAL_LIST_STATEMENT
     | FIELD_STATEMENT
-    | GROUP_STATEMENT
     | IP_UNITS_STATEMENT
     | KEY_STATEMENT
-    | MAXIMUM_STATEMENT
-    | MINIMUM_STATEMENT
+    | MAXIMUM_INCLUSIVE_STATEMENT
+    | MAXIMUM_EXCLUSIVE_STATEMENT
+    | MINIMUM_INCLUSIVE_STATEMENT
+    | MINIMUM_EXCLUSIVE_STATEMENT
     | NOTE_STATEMENT
     | OBJECT_LIST_STATEMENT
     | REFERENCE_STATEMENT
@@ -57,14 +58,14 @@ field_property :
     | RETAINCASE_STATEMENT
     | TYPE_STATEMENT
     | UNITS_STATEMENT
-    | GENERAL_PROPERTY
+    | units_based_on_field_statement
     ;
 
 AUTOCALCULATABLE_STATEMENT     : '\\autocalculatable' NEWLINE ;
 AUTOSIZABLE_STATEMENT          : '\\autosizable' NEWLINE ;
 BEGIN_EXTENSIBLE_STATEMENT     : '\\begin-extensible' NEWLINE ;
 DEFAULT_STATEMENT              : '\\default ' .*? NEWLINE ;
-DEPRECATED_STATEMENT           : '\\deprecated ' NEWLINE ;
+DEPRECATED_STATEMENT           : '\\deprecated' NEWLINE ;
 EXTENSIBLE_STATEMENT           : '\\extensible' .*? NEWLINE ;
 EXTERNAL_LIST_STATEMENT        : '\\external-list ' .*? NEWLINE ;
 FIELD_STATEMENT                : '\\field ' .*? NEWLINE ;
@@ -72,10 +73,12 @@ FORMAT_STATEMENT               : '\\format ' .*? NEWLINE ;
 GROUP_STATEMENT                : '\\group ' .*? NEWLINE ;
 IP_UNITS_STATEMENT             : '\\ip-units ' .*? NEWLINE ;
 KEY_STATEMENT                  : '\\key ' .*? NEWLINE ;
-MAXIMUM_STATEMENT              : '\\maximum ' .*? NEWLINE ;
+MAXIMUM_EXCLUSIVE_STATEMENT    : '\\maximum<' .*? NEWLINE ;
+MAXIMUM_INCLUSIVE_STATEMENT    : '\\maximum ' .*? NEWLINE ;
 MEMO_STATEMENT                 : '\\memo ' .*? NEWLINE ;
-MIN_FIELDS_STATEMENT           : '\\min-fields ' .*? NEWLINE ;
-MINIMUM_STATEMENT              : '\\minimum ' .*? NEWLINE ;
+min_fields_statement           : '\\min-fields ' INTEGER NEWLINE ;
+MINIMUM_EXCLUSIVE_STATEMENT    : '\\minimum>' .*? NEWLINE ;
+MINIMUM_INCLUSIVE_STATEMENT    : '\\minimum ' .*? NEWLINE ;
 NOTE_STATEMENT                 : '\\note ' .*? NEWLINE ;
 OBJECT_LIST_STATEMENT          : '\\object-list ' .*? NEWLINE ;
 OBSOLETE_STATEMENT             : '\\obsolete ' .*? NEWLINE ;
@@ -86,9 +89,13 @@ REQUIRED_OBJECT_STATEMENT      : '\\required-object' NEWLINE ;
 RETAINCASE_STATEMENT           : '\\retaincase' NEWLINE ;
 TYPE_STATEMENT                 : '\\type ' .*? NEWLINE ;
 UNIQUE_OBJECT_STATEMENT        : '\\unique-object' NEWLINE ;
+units_based_on_field_statement : '\\unitsBasedOnField ' (ALPHA_OPTION | NUMERIC_OPTION) NEWLINE ;
 UNITS_STATEMENT                : '\\units ' .*? NEWLINE ;
 
-GENERAL_PROPERTY : '\\' .*? NEWLINE ;
+INTEGER : [1-9][0-9]* ;
+
+/*GENERAL_PROPERTY : '\\' .*? NEWLINE ;*/
+
 
 ALPHA_OPTION : 'A'[1-9][0-9]* ;
 
@@ -97,6 +104,7 @@ NUMERIC_OPTION : 'N'[1-9][0-9]* ;
 OBJECT_NAME : [A-Z][a-zA-Z0-9:-]+ ;
 
 COMMENT : '!' .*? NEWLINE ;
+
 
 FIELD_SEPARATOR : ',' ;
 
