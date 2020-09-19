@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using dotnet;
@@ -34,8 +35,25 @@ namespace tests
             
             walker.Walk(listener, tree);
             
-            File.WriteAllText("/home/mitch/repos/idf-lint/idd_output.txt", listener.Builder.ToString());
+            // BuildMyString.com generated code. Please enjoy your string responsibly.
+
+            StringBuilder sb = new StringBuilder();
+
+            sb.Append("using System;\n");
+            sb.Append("using System.Collections.Generic;\n");
+            sb.Append("namespace dotnet\n");
+            sb.Append("{\n");
+            sb.Append("    public static class IdfObjectList\n");
+            sb.Append("    {\n");
+            sb.Append("        public static Dictionary<string, IdfObject> Objects = new Dictionary<string, IdfObject>(StringComparer.OrdinalIgnoreCase)\n");
+            sb.Append("        {\n");
+
+            sb.Append(listener.Builder.ToString());
+            sb.Append("        };\n");
+            sb.Append("    }\n");
+            sb.Append("}\n");
             
+            File.WriteAllText("/home/mitch/repos/idf-lint/dotnet/app/IdfObjectList.cs", sb.ToString());
         }
     }
 }
