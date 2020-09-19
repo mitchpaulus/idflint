@@ -179,6 +179,30 @@ public partial class IddBaseListener : IIddListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitField_property([NotNull] IddParser.Field_propertyContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="IddParser.maximum_exclusive_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMaximum_exclusive_statement([NotNull] IddParser.Maximum_exclusive_statementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="IddParser.maximum_exclusive_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMaximum_exclusive_statement([NotNull] IddParser.Maximum_exclusive_statementContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="IddParser.maximum_inclusive_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMaximum_inclusive_statement([NotNull] IddParser.Maximum_inclusive_statementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="IddParser.maximum_inclusive_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMaximum_inclusive_statement([NotNull] IddParser.Maximum_inclusive_statementContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="IddParser.min_fields_statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
@@ -190,6 +214,42 @@ public partial class IddBaseListener : IIddListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitMin_fields_statement([NotNull] IddParser.Min_fields_statementContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="IddParser.minimum_exclusive_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMinimum_exclusive_statement([NotNull] IddParser.Minimum_exclusive_statementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="IddParser.minimum_exclusive_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMinimum_exclusive_statement([NotNull] IddParser.Minimum_exclusive_statementContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="IddParser.minimum_inclusive_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterMinimum_inclusive_statement([NotNull] IddParser.Minimum_inclusive_statementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="IddParser.minimum_inclusive_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitMinimum_inclusive_statement([NotNull] IddParser.Minimum_inclusive_statementContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="IddParser.type_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterType_statement([NotNull] IddParser.Type_statementContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="IddParser.type_statement"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitType_statement([NotNull] IddParser.Type_statementContext context) { }
 	/// <summary>
 	/// Enter a parse tree produced by <see cref="IddParser.units_based_on_field_statement"/>.
 	/// <para>The default implementation does nothing.</para>

@@ -18,13 +18,11 @@ field : field_id FIELD_SEPARATOR NEWLINE* field_properties ;
 
 field_id : ALPHA_OPTION | NUMERIC_OPTION ;
 
-group : GROUPSTATEMENT (object | COMMENT)* ;
+group : GROUP_STATEMENT (object | COMMENT)* ;
 
 object_properties : (object_property | COMMENT)* ;
 
 field_properties : (field_property | COMMENT)* ;
-
-GROUPSTATEMENT : '\\group ' .*? NEWLINE  ;
 
 object_property :
       EXTENSIBLE_STATEMENT
@@ -36,7 +34,7 @@ object_property :
     | UNIQUE_OBJECT_STATEMENT
     ;
 
-field_property : 
+field_property :
       AUTOCALCULATABLE_STATEMENT
     | AUTOSIZABLE_STATEMENT
     | BEGIN_EXTENSIBLE_STATEMENT
@@ -46,20 +44,32 @@ field_property :
     | FIELD_STATEMENT
     | IP_UNITS_STATEMENT
     | KEY_STATEMENT
-    | MAXIMUM_INCLUSIVE_STATEMENT
-    | MAXIMUM_EXCLUSIVE_STATEMENT
-    | MINIMUM_INCLUSIVE_STATEMENT
-    | MINIMUM_EXCLUSIVE_STATEMENT
+    | maximum_inclusive_statement
+    | maximum_exclusive_statement
+    | minimum_inclusive_statement
+    | minimum_exclusive_statement
     | NOTE_STATEMENT
     | OBJECT_LIST_STATEMENT
     | REFERENCE_STATEMENT
     | REFERENCE_CLASS_NAME_STATEMENT
     | REQUIRED_FIELD_STATEMENT
     | RETAINCASE_STATEMENT
-    | TYPE_STATEMENT
+    | type_statement
     | UNITS_STATEMENT
     | units_based_on_field_statement
     ;
+
+
+FIELD_TYPE :
+      'integer'
+    | 'real'
+    | 'alpha'
+    | 'choice'
+    | 'object-list'
+    | 'external-list'
+    | 'node'
+    ;
+
 
 AUTOCALCULATABLE_STATEMENT     : '\\autocalculatable' NEWLINE ;
 AUTOSIZABLE_STATEMENT          : '\\autosizable' NEWLINE ;
@@ -73,12 +83,12 @@ FORMAT_STATEMENT               : '\\format ' .*? NEWLINE ;
 GROUP_STATEMENT                : '\\group ' .*? NEWLINE ;
 IP_UNITS_STATEMENT             : '\\ip-units ' .*? NEWLINE ;
 KEY_STATEMENT                  : '\\key ' .*? NEWLINE ;
-MAXIMUM_EXCLUSIVE_STATEMENT    : '\\maximum<' .*? NEWLINE ;
-MAXIMUM_INCLUSIVE_STATEMENT    : '\\maximum ' .*? NEWLINE ;
+maximum_exclusive_statement    : '\\maximum< ' maxval=(REALNUMBER | INTEGER) NEWLINE ;
+maximum_inclusive_statement    : '\\maximum ' maxval=(REALNUMBER | INTEGER)  NEWLINE ;
 MEMO_STATEMENT                 : '\\memo ' .*? NEWLINE ;
 min_fields_statement           : '\\min-fields ' INTEGER NEWLINE ;
-MINIMUM_EXCLUSIVE_STATEMENT    : '\\minimum>' .*? NEWLINE ;
-MINIMUM_INCLUSIVE_STATEMENT    : '\\minimum ' .*? NEWLINE ;
+minimum_exclusive_statement    : '\\minimum>' minval=(REALNUMBER | INTEGER) NEWLINE ;
+minimum_inclusive_statement    : '\\minimum ' minval=(REALNUMBER | INTEGER) NEWLINE ;
 NOTE_STATEMENT                 : '\\note ' .*? NEWLINE ;
 OBJECT_LIST_STATEMENT          : '\\object-list ' .*? NEWLINE ;
 OBSOLETE_STATEMENT             : '\\obsolete ' .*? NEWLINE ;
@@ -87,15 +97,22 @@ REFERENCE_CLASS_NAME_STATEMENT : '\\reference-class-name ' .*? NEWLINE ;
 REQUIRED_FIELD_STATEMENT       : '\\required-field' NEWLINE ;
 REQUIRED_OBJECT_STATEMENT      : '\\required-object' NEWLINE ;
 RETAINCASE_STATEMENT           : '\\retaincase' NEWLINE ;
-TYPE_STATEMENT                 : '\\type ' .*? NEWLINE ;
+type_statement                 : '\\type ' FIELD_TYPE NEWLINE ;
 UNIQUE_OBJECT_STATEMENT        : '\\unique-object' NEWLINE ;
 units_based_on_field_statement : '\\unitsBasedOnField ' (ALPHA_OPTION | NUMERIC_OPTION) NEWLINE ;
 UNITS_STATEMENT                : '\\units ' .*? NEWLINE ;
 
 INTEGER : [1-9][0-9]* ;
 
-/*GENERAL_PROPERTY : '\\' .*? NEWLINE ;*/
-
+REALNUMBER : ('-'|'+')?  // On some numbers, they put a '+'
+                    ((
+                        ([1-9][0-9]*|'0')('.'[0-9]+)? |
+                        ('.'[0-9]+)      // This captures numbers entered with no leading zero '.0'
+                    )
+                ([eE]'-'?[0-9]+)?  |
+                    ([1-9][0-9]*|'0')'.' // Needed to add this nonsense for numbers added like: '0.'
+                )
+                ;
 
 ALPHA_OPTION : 'A'[1-9][0-9]* ;
 
@@ -104,7 +121,6 @@ NUMERIC_OPTION : 'N'[1-9][0-9]* ;
 OBJECT_NAME : [A-Z][a-zA-Z0-9:-]+ ;
 
 COMMENT : '!' .*? NEWLINE ;
-
 
 FIELD_SEPARATOR : ',' ;
 
