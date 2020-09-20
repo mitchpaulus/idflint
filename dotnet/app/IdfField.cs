@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,7 +12,7 @@ namespace dotnet
         public double Maximum { get; set; }
         public string Default { get; set; } = "";
         public bool AutoSizeable { get; set; } = false;
-        public List<string> Keys { get; set; } = new List<string>();
+        public HashSet<string> Keys { get; set; } = new HashSet<string>();
         public IdfFieldAlphaNumeric AlphaNumeric { get; set; } = IdfFieldAlphaNumeric.Alpha;
         public string Name { get; set; } = "";
 
@@ -29,7 +30,7 @@ namespace dotnet
                         string defaultValue,
                         bool autoSizeable,
                         IdfFieldAlphaNumeric alphaNumeric,
-                        List<string> keys,
+                        HashSet<string> keys,
                         string name,
                         IdfFieldMinMaxType minType,
                         IdfFieldMinMaxType maxType)
@@ -70,7 +71,7 @@ namespace dotnet
         public string WriteKeys()
         {
             string keys = string.Join(",", Keys.Select(s => $"\"{s}\""));
-            return $"new List<string> {{ {keys}  }} ";
+            return $"new HashSet<string>(StringComparer.OrdinalIgnoreCase){{{keys}}}";
         }
     }
 
@@ -177,5 +178,25 @@ namespace dotnet
 
         public static string WrapInQuotes(this string value) => $"\"{value}\"";
 
+        public static string OrList(this IEnumerable<string> values)
+        {
+            var enumerable = values.ToList();
+            return enumerable.Count() == 2 ? $"{enumerable.First()} or {enumerable.Last()}" : $"{string.Join(", ", enumerable.Take(enumerable.Count() - 1))}, or {enumerable.Last()}";
+        }
+
+        public static string AndList(this IEnumerable<string> values)
+        {
+            var enumerable = values.ToList();
+            return enumerable.Count() == 2 ? $"{enumerable.First()} and {enumerable.Last()}" : $"{string.Join(", ", enumerable.Take(enumerable.Count() - 1))}, and {enumerable.Last()}";
+        }
+    }
+
+
+    public static class ErrorExtensions
+    {
+        public static void WriteErrors(this List<IdfError> errors)
+        {
+            foreach (IdfError error in errors) Console.WriteLine($"{error.Line()}:{error.Character()} {error.Message()}");
+        }
     }
 }

@@ -16,3 +16,4 @@ Building,
   FullExterior,            !- Solar Distribution
   -45,                      !- Maximum Number of Warmup Days
   6e-8;                       !- Minimum Number of Warmup Days
+
