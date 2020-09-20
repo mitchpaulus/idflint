@@ -8,3 +8,7 @@ dist-newstyle/
 *.class
 *.java
 
+antlr/idf/IdfLexer.cs
+antlr/idf/IdfParser.cs
+dotnet/app/IdfObjectList.cs
+        
