@@ -98,6 +98,7 @@ namespace tests
             foreach (IddParser.Field_propertyContext prop in properties)
             {
                 if (prop.AUTOSIZABLE_STATEMENT() != null) field.AutoSizeable = true;
+                else if (prop.AUTOCALCULATABLE_STATEMENT() != null) field.AutoCalculatable = true;
                 else if (prop.REQUIRED_FIELD_STATEMENT() != null) field.Required = true;
                 else if (prop.UNITS_STATEMENT() != null) field.Units =  prop.UNITS_STATEMENT().GetText().Substring(7).Trim();
                 else if (prop.KEY_STATEMENT() != null) field.Keys.Add(prop.KEY_STATEMENT().GetText().Substring(5).Trim());
@@ -111,6 +112,10 @@ namespace tests
                 {
                     field.MinType = IdfFieldMinMaxType.Inclusive;
                     field.Maximum = double.Parse(prop.maximum_inclusive_statement().maxval.Text);
+                }
+                else if (prop.DEFAULT_STATEMENT() != null)
+                {
+                    field.Default = prop.DEFAULT_STATEMENT().GetText().Substring(9).Trim();
                 }
             }
             

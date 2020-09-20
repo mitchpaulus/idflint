@@ -10,8 +10,10 @@ namespace dotnet
         public string Units { get; set; } = "";
         public double Minimum { get; set; }
         public double Maximum { get; set; }
-        public string Default { get; set; } = "";
+        public string Default { get; set; } = null;
+        public bool HasDefault => !string.IsNullOrWhiteSpace(Default);
         public bool AutoSizeable { get; set; } = false;
+        public bool AutoCalculatable { get; set; } = false;
         public HashSet<string> Keys { get; set; } = new HashSet<string>();
         public IdfFieldAlphaNumeric AlphaNumeric { get; set; } = IdfFieldAlphaNumeric.Alpha;
         public string Name { get; set; } = "";
@@ -28,6 +30,7 @@ namespace dotnet
                         double minimum,
                         double maximum,
                         string defaultValue,
+                        bool autoCalculatable,
                         bool autoSizeable,
                         IdfFieldAlphaNumeric alphaNumeric,
                         HashSet<string> keys,
@@ -40,6 +43,7 @@ namespace dotnet
             Minimum = minimum;
             Maximum = maximum;
             Default = defaultValue;
+            AutoCalculatable = autoCalculatable;
             AutoSizeable = autoSizeable;
             AlphaNumeric = alphaNumeric;
             Keys = keys;
@@ -57,6 +61,7 @@ namespace dotnet
                 Minimum.ToString(),
                 Maximum.ToString(),
                 Default.WrapInQuotes(),
+                AutoCalculatable.ToBoolString(),
                 AutoSizeable.ToBoolString(),
                 $"IdfFieldAlphaNumeric.{AlphaNumeric}",
                 WriteKeys(),
@@ -176,7 +181,7 @@ namespace dotnet
     {
         public static string ToBoolString(this bool value) =>  value ? "true" : "false";
 
-        public static string WrapInQuotes(this string value) => $"\"{value}\"";
+        public static string WrapInQuotes(this string value) => value == null ? "null" : $"\"{value}\"";
 
         public static string OrList(this IEnumerable<string> values)
         {

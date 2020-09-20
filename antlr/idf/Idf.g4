@@ -8,7 +8,7 @@ idf : (COMMENT | object)* EOF;
 
 object : ALPHA FIELD_SEPARATOR COMMENT* fields ;
 
-fields : field? (FIELD_SEPARATOR COMMENT* field?)* OBJECT_TERMINATOR COMMENT* ;
+fields : field (FIELD_SEPARATOR COMMENT* field)* OBJECT_TERMINATOR COMMENT* ;
 
 COMMENT :  '!' .*? '\n' ;
 
@@ -21,7 +21,7 @@ NUMERIC : '-'?(([1-9][0-9]*|'0')('.'[0-9]+)? | ('.'[0-9]+))([eE]'-'?[0-9]+)? ;
 
 ALPHA : [a-zA-Z0-9] ~[,;!]* [a-zA-Z0-9] ;
 
-field : NUMERIC | ALPHA ;
+field : NUMERIC | ALPHA | ;
 
 WS : [ \t\r\n]+ -> skip ;
 

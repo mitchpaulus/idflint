@@ -83,12 +83,22 @@ namespace Idf {
             foreach ((IdfParser.FieldContext actualField, IdfField expectedField) in zippedFields)
             {
                 // Check for matching one of the key values for a field
+                var trimmedFieldValue = actualField.GetText().Trim();
+                
                 if (expectedField.Keys.Any())
                 {
-                    if (!expectedField.Keys.Contains(actualField.GetText().Trim()))
+                    if (!expectedField.Keys.Contains(trimmedFieldValue) && !(string.IsNullOrWhiteSpace(trimmedFieldValue) && expectedField.HasDefault))
                     {
-                        errors.Add(new FieldNotInChoiceError(actualField.Start, expectedField.Name, expectedField.Keys, actualField.GetText().Trim()));
+                        errors.Add(new FieldNotInChoiceError(actualField.Start, expectedField.Name, expectedField.Keys, trimmedFieldValue));
                     }
+                }
+
+                if (expectedField.AlphaNumeric == IdfFieldAlphaNumeric.Numeric)
+                {
+                    bool success = double.TryParse(trimmedFieldValue, out double value) || 
+                                   (string.Equals(trimmedFieldValue, "autocalculate", StringComparison.OrdinalIgnoreCase) && expectedField.AutoCalculatable) ||
+                                   (string.IsNullOrWhiteSpace(trimmedFieldValue) && !string.IsNullOrWhiteSpace(expectedField.Default));
+                    if (!success) errors.Add(new NumericFieldNotNumericError(actualField.Start, expectedField.Name, trimmedFieldValue));
                 }
             }
 

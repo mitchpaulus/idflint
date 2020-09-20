@@ -90,12 +90,20 @@ namespace tests
             string idf = "Version,9.2,Another Field;";
             AssertError(idf, typeof(TooManyFieldsProvidedError));
         }
-        
-        public void AssertError(string idf, Type expectedErrorType)
+
+        [Test]
+        public void TestNumericFieldIsNumeric()
+        {
+            string idf = "Timestep,Not a Number;";
+            AssertError(idf, typeof(NumericFieldNotNumericError), true);
+        }
+
+        public void AssertError(string idf, Type expectedErrorType, bool writeErrors = false)
         {
             IdfLinter linter = new IdfLinter(idf);
             var errors = linter.Lint();
             Assert.IsTrue(errors.Any(error => error.GetType() == expectedErrorType));
+            if (writeErrors) errors.WriteErrors();
         }
     }
 }
