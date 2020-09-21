@@ -87,7 +87,7 @@ namespace Idf {
                 
                 if (expectedField.Keys.Any())
                 {
-                    if (!expectedField.Keys.Contains(trimmedFieldValue) && !(string.IsNullOrWhiteSpace(trimmedFieldValue) && expectedField.HasDefault))
+                    if (!expectedField.Keys.Contains(trimmedFieldValue) && !(string.IsNullOrWhiteSpace(trimmedFieldValue) && expectedField.HasDefault) && expectedField.Required)
                     {
                         errors.Add(new FieldNotInChoiceError(actualField.Start, expectedField.Name, expectedField.Keys, trimmedFieldValue));
                     }
@@ -95,9 +95,11 @@ namespace Idf {
 
                 if (expectedField.AlphaNumeric == IdfFieldAlphaNumeric.Numeric)
                 {
-                    bool success = double.TryParse(trimmedFieldValue, out double value) || 
-                                   (string.Equals(trimmedFieldValue, "autocalculate", StringComparison.OrdinalIgnoreCase) && expectedField.AutoCalculatable) ||
-                                   (string.IsNullOrWhiteSpace(trimmedFieldValue) && !string.IsNullOrWhiteSpace(expectedField.Default));
+                    bool properlyAutocalculatable = (string.Equals(trimmedFieldValue, "autocalculate", StringComparison.OrdinalIgnoreCase) && expectedField.AutoCalculatable);
+                    bool parsesAsDouble = double.TryParse(trimmedFieldValue, out double value);
+                    var isBlankAndNotRequired = (string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required));
+                    
+                    bool success = parsesAsDouble || properlyAutocalculatable || isBlankAndNotRequired;
                     if (!success) errors.Add(new NumericFieldNotNumericError(actualField.Start, expectedField.Name, trimmedFieldValue));
                 }
             }
