@@ -87,7 +87,7 @@ namespace Idf {
                 
                 if (expectedField.Keys.Any())
                 {
-                    if (!expectedField.Keys.Contains(trimmedFieldValue) && !(string.IsNullOrWhiteSpace(trimmedFieldValue) && expectedField.HasDefault) && expectedField.Required)
+                    if (!expectedField.Keys.Contains(trimmedFieldValue) && !(string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required)))
                     {
                         errors.Add(new FieldNotInChoiceError(actualField.Start, expectedField.Name, expectedField.Keys, trimmedFieldValue));
                     }
