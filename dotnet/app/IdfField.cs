@@ -20,6 +20,8 @@ namespace dotnet
 
         public bool ExtensibleBegin { get; set; } = false;
 
+        public string ReferenceList { get; set; } = null;
+
         public IdfFieldMinMaxType MinType { get; set; } = IdfFieldMinMaxType.None;
         public IdfFieldMinMaxType MaxType { get; set; } = IdfFieldMinMaxType.None;
         
@@ -36,7 +38,8 @@ namespace dotnet
                         HashSet<string> keys,
                         string name,
                         IdfFieldMinMaxType minType,
-                        IdfFieldMinMaxType maxType)
+                        IdfFieldMinMaxType maxType,
+                        string referenceList)
         {
             Required = required;
             Units = units;
@@ -50,6 +53,7 @@ namespace dotnet
             Name = name;
             MinType = minType;
             MaxType = maxType;
+            ReferenceList = referenceList;
         }
 
         public string WriteConstructor()
@@ -67,7 +71,8 @@ namespace dotnet
                 WriteKeys(),
                 Name.WrapInQuotes(),
                 $"IdfFieldMinMaxType.{MinType}",
-                $"IdfFieldMinMaxType.{MaxType}"
+                $"IdfFieldMinMaxType.{MaxType}",
+                ReferenceList.WrapInQuotes(),
             };
             return
                 $"new IdfField({string.Join(",", parameters)})";

@@ -103,6 +103,7 @@ namespace tests
                 else if (prop.UNITS_STATEMENT() != null) field.Units =  prop.UNITS_STATEMENT().GetText().Substring(7).Trim();
                 else if (prop.KEY_STATEMENT() != null) field.Keys.Add(prop.KEY_STATEMENT().GetText().Substring(5).Trim());
                 else if (prop.FIELD_STATEMENT() != null) field.Name = prop.FIELD_STATEMENT().GetText().Substring(7).Trim();
+                else if (prop.REFERENCE_STATEMENT() != null) field.ReferenceList = prop.REFERENCE_STATEMENT().GetText().Substring(11).Trim();
                 else if (prop.minimum_inclusive_statement() != null)
                 {
                     field.MinType = IdfFieldMinMaxType.Inclusive;
