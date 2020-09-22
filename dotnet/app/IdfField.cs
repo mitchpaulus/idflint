@@ -19,8 +19,10 @@ namespace dotnet
         public string Name { get; set; } = "";
 
         public bool ExtensibleBegin { get; set; } = false;
-
+        
         public string ReferenceList { get; set; } = null;
+
+        public string ObjectList { get; set; } = null;
 
         public IdfFieldMinMaxType MinType { get; set; } = IdfFieldMinMaxType.None;
         public IdfFieldMinMaxType MaxType { get; set; } = IdfFieldMinMaxType.None;
@@ -39,7 +41,8 @@ namespace dotnet
                         string name,
                         IdfFieldMinMaxType minType,
                         IdfFieldMinMaxType maxType,
-                        string referenceList)
+                        string referenceList,
+                        string objectList)
         {
             Required = required;
             Units = units;
@@ -54,6 +57,7 @@ namespace dotnet
             MinType = minType;
             MaxType = maxType;
             ReferenceList = referenceList;
+            ObjectList = objectList;
         }
 
         public string WriteConstructor()
@@ -73,6 +77,7 @@ namespace dotnet
                 $"IdfFieldMinMaxType.{MinType}",
                 $"IdfFieldMinMaxType.{MaxType}",
                 ReferenceList.WrapInQuotes(),
+                ObjectList.WrapInQuotes(),
             };
             return
                 $"new IdfField({string.Join(",", parameters)})";
