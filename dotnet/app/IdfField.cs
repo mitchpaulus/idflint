@@ -99,6 +99,7 @@ namespace dotnet
         public bool Required { get; set; } = false;
         public string Name { get; set; } = "";
 
+
         public bool Extensible { get; set; } = false;
 
         public int ExtensibleCountSize { get; set; } = 0;
@@ -141,7 +142,38 @@ namespace dotnet
             };
 
             return $"new IdfObject({string.Join(",", parameters)} )";
+        }
 
+        public List<BoundField> ZipWithFields(List<string> fields) => Fields.Zip(fields, (field, s) => new BoundField(field, s)).ToList();
+
+        protected bool Equals(IdfObject other)
+        {
+            return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((IdfObject) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return (Name != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(Name) : 0);
+        }
+    }
+
+    public class BoundField
+    {
+        public IdfField ExpectedField;
+        public string FoundField;
+
+        public BoundField(IdfField expectedField, string foundField)
+        {
+            ExpectedField = expectedField;
+            FoundField = foundField;
         }
     }
 

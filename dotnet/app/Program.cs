@@ -78,9 +78,43 @@ namespace dotnet
             IdfLintListener idfLintListener = new IdfLintListener();
             walker.Walk(idfLintListener, tree);
 
+            var inputData = idfLintListener.IdfObjects;
+
             errors.AddRange(idfLintListener.errors);
 
             return errors;
+        }
+
+        // public List<IdfError> GetIdfErrors(Dictionary<string, List<List<string>>> data)
+        // {
+        //
+        //     foreach (string key in data.Keys)
+        //     {
+        //
+        //
+        //     }
+        // }
+
+        public Dictionary<string, List<string>> GetReferenceLists(Dictionary<string, List<List<string>>> data)
+        {
+            Dictionary<string, List<string>> referenceList = new Dictionary<string, List<string>>();
+            foreach (string key in data.Keys)
+            {
+                IdfObject idfObject = IdfObjectList.Objects[key];
+
+                foreach (var fields in data[key])
+                {
+                    var referenceFields = idfObject.ZipWithFields(fields)
+                        .Where(field => !string.IsNullOrWhiteSpace(field.ExpectedField.ReferenceList)).ToList();
+
+                    foreach (var referenceField in referenceFields)
+                    {
+                        referenceList.AddSafe(referenceField.ExpectedField.ReferenceList, referenceField.FoundField);
+                    }
+                }
+            }
+
+            return referenceList;
         }
     }
 }

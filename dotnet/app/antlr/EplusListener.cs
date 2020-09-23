@@ -30,6 +30,8 @@ namespace Idf {
     {
         public List<IdfError> errors = new List<IdfError>();
 
+        public Dictionary<string, List<List<string>>> IdfObjects = new Dictionary<string, List<List<string>>>();
+
         public override void EnterObject(IdfParser.ObjectContext context) {
             string typeName = context.ALPHA().GetText();
 
@@ -39,6 +41,9 @@ namespace Idf {
                 // Return early and don't check any of the fields if we don't know what it is.
                 return;
             }
+
+            if (!IdfObjects.ContainsKey(typeName)) IdfObjects[typeName] = new List<List<string>>();
+            IdfObjects[typeName].Add(context.fields().field().Select(fieldContext => fieldContext.GetText().Trim()).ToList());
 
             IdfObject idfObject = IdfObjectList.Objects[typeName];
 
@@ -84,7 +89,7 @@ namespace Idf {
             {
                 // Check for matching one of the key values for a field
                 var trimmedFieldValue = actualField.GetText().Trim();
-                
+
                 if (expectedField.Keys.Any())
                 {
                     if (!expectedField.Keys.Contains(trimmedFieldValue) && !(string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required)))
@@ -98,7 +103,7 @@ namespace Idf {
                     bool properlyAutocalculatable = (string.Equals(trimmedFieldValue, "autocalculate", StringComparison.OrdinalIgnoreCase) && expectedField.AutoCalculatable);
                     bool parsesAsDouble = double.TryParse(trimmedFieldValue, out double value);
                     var isBlankAndNotRequired = (string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required));
-                    
+
                     bool success = parsesAsDouble || properlyAutocalculatable || isBlankAndNotRequired;
                     if (!success) errors.Add(new NumericFieldNotNumericError(actualField.Start, expectedField.Name, trimmedFieldValue));
                 }
