@@ -30,7 +30,7 @@ namespace Idf {
     {
         public List<IdfError> errors = new List<IdfError>();
 
-        public Dictionary<string, List<List<string>>> IdfObjects = new Dictionary<string, List<List<string>>>();
+        public Dictionary<string, List<IdfParser.ObjectContext>> IdfObjects = new Dictionary<string, List<IdfParser.ObjectContext>>();
 
         public override void EnterObject(IdfParser.ObjectContext context) {
             string typeName = context.ALPHA().GetText();
@@ -42,14 +42,9 @@ namespace Idf {
                 return;
             }
 
-            if (!IdfObjects.ContainsKey(typeName)) IdfObjects[typeName] = new List<List<string>>();
-            IdfObjects[typeName].Add(context.fields().field().Select(fieldContext => fieldContext.GetText().Trim()).ToList());
+            IdfObjects.AddSafe(typeName, context);
 
             IdfObject idfObject = IdfObjectList.Objects[typeName];
-
-            FieldChecks fieldChecks = new FieldChecks(context, idfObject);
-
-            errors.AddRange(fieldChecks.Errors());
         }
     }
 

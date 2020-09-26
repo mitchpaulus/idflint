@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using dotnet.checks;
 
 namespace dotnet
 {
@@ -19,14 +20,14 @@ namespace dotnet
         public string Name { get; set; } = "";
 
         public bool ExtensibleBegin { get; set; } = false;
-        
-        public string ReferenceList { get; set; } = null;
 
-        public string ObjectList { get; set; } = null;
+        public List<string> ReferenceList { get; set; } = new List<string>();
+
+        public List<string> ObjectList { get; set; } = new List<string>();
 
         public IdfFieldMinMaxType MinType { get; set; } = IdfFieldMinMaxType.None;
         public IdfFieldMinMaxType MaxType { get; set; } = IdfFieldMinMaxType.None;
-        
+
         public IdfField() { }
 
         public IdfField(bool required,
@@ -41,8 +42,8 @@ namespace dotnet
                         string name,
                         IdfFieldMinMaxType minType,
                         IdfFieldMinMaxType maxType,
-                        string referenceList,
-                        string objectList)
+                        List<string> referenceList,
+                        List<string> objectList)
         {
             Required = required;
             Units = units;
@@ -76,18 +77,18 @@ namespace dotnet
                 Name.WrapInQuotes(),
                 $"IdfFieldMinMaxType.{MinType}",
                 $"IdfFieldMinMaxType.{MaxType}",
-                ReferenceList.WrapInQuotes(),
-                ObjectList.WrapInQuotes(),
+                WriteStringList(ReferenceList),
+                WriteStringList(ObjectList),
             };
             return
                 $"new IdfField({string.Join(",", parameters)})";
         }
 
-        public string WriteKeys()
-        {
-            string keys = string.Join(",", Keys.Select(s => $"\"{s}\""));
-            return $"new HashSet<string>(StringComparer.OrdinalIgnoreCase){{{keys}}}";
-        }
+        private string WriteKeys() => $"new HashSet<string>(StringComparer.OrdinalIgnoreCase){{{JoinStrings(Keys)}}}";
+
+        private string WriteStringList(List<string> strings) => $"new List<string>{{{JoinStrings(strings)}}}";
+
+        private string JoinStrings(IEnumerable<string> strings) => string.Join(",", strings.Select(s => $"\"{s}\""));
     }
 
     public class IdfObject
@@ -98,7 +99,6 @@ namespace dotnet
         public int? MinNumberOfFields { get; set; } = null;
         public bool Required { get; set; } = false;
         public string Name { get; set; } = "";
-
 
         public bool Extensible { get; set; } = false;
 
@@ -124,7 +124,7 @@ namespace dotnet
             Extensible = extensible;
             TotalNumberOfDefinedFields = totalNumberOfDefinedFields;
         }
-        
+
         public string WriteObjectConstructor()
         {
             var fields = string.Join(",", Fields.Select(field => field.WriteConstructor() ));
@@ -144,7 +144,7 @@ namespace dotnet
             return $"new IdfObject({string.Join(",", parameters)} )";
         }
 
-        public List<BoundField> ZipWithFields(List<string> fields) => Fields.Zip(fields, (field, s) => new BoundField(field, s)).ToList();
+        public List<BoundField> ZipWithFields(IEnumerable<IdfParser.FieldContext> fields) => Fields.Zip(fields, (field, s) => new BoundField(field, s)).ToList();
 
         protected bool Equals(IdfObject other)
         {
@@ -163,24 +163,84 @@ namespace dotnet
         {
             return (Name != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(Name) : 0);
         }
+
+        public List<IdfError> FieldChecks(IdfParser.ObjectContext actualIdfObject)
+        {
+            List<IdfError> errors = new List<IdfError>();
+
+            var fields = actualIdfObject.fields().field();
+
+            // Check for minimum number of fields
+            if (MinNumberOfFields != null && fields.Length < MinNumberOfFields)
+            {
+                errors.Add(new MinNumberOfFieldsError(actualIdfObject.Start, Name, MinNumberOfFields.Value, fields.Length));
+            }
+
+            if (fields.Length > TotalNumberOfDefinedFields)
+            {
+                errors.Add( new TooManyFieldsProvidedError(actualIdfObject.Start, Name, TotalNumberOfDefinedFields, fields.Count()));
+            }
+
+            List<(IdfParser.FieldContext ActualField, IdfField ExpectedField)> zippedFields = fields
+                .Zip(Fields, (context, field) => (ActualField: context, ExpectedField: field)).ToList();
+
+            foreach ((IdfParser.FieldContext actualField, IdfField expectedField) in zippedFields)
+            {
+                // Check for matching one of the key values for a field
+                var trimmedFieldValue = actualField.GetText().Trim();
+
+                if (expectedField.Keys.Any())
+                {
+                    if (!expectedField.Keys.Contains(trimmedFieldValue) && !(string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required)))
+                    {
+                        errors.Add(new FieldNotInChoiceError(actualField.Start, expectedField.Name, expectedField.Keys, trimmedFieldValue));
+                    }
+                }
+
+                if (expectedField.AlphaNumeric == IdfFieldAlphaNumeric.Numeric)
+                {
+                    bool properlyAutocalculatable = (string.Equals(trimmedFieldValue, "autocalculate", StringComparison.OrdinalIgnoreCase) && expectedField.AutoCalculatable);
+                    bool parsesAsDouble = double.TryParse(trimmedFieldValue, out double value);
+                    var isBlankAndNotRequired = (string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required));
+
+                    bool success = parsesAsDouble || properlyAutocalculatable || isBlankAndNotRequired;
+                    if (!success) errors.Add(new NumericFieldNotNumericError(actualField.Start, expectedField.Name, trimmedFieldValue));
+                }
+            }
+
+            return errors;
+        }
+
+
+
+
     }
 
     public class BoundField
     {
         public IdfField ExpectedField;
-        public string FoundField;
+        public IdfParser.FieldContext FieldContext;
+        public string FoundField => FieldContext.GetText().Trim();
 
-        public BoundField(IdfField expectedField, string foundField)
+        public BoundField(IdfField expectedField, IdfParser.FieldContext fieldContext)
         {
             ExpectedField = expectedField;
-            FoundField = foundField;
+            FieldContext = fieldContext;
         }
+    }
+
+    public class BoundObject
+    {
+        public IdfObject ExpectedObject;
+        public IdfParser.ObjectContext FoundObject;
+
+
     }
 
     public class IdfUnit
     {
-        
-        
+
+
     }
 
     public enum IdfFieldAlphaNumeric
@@ -205,7 +265,7 @@ namespace dotnet
         FluidProperties = 3,
         ViewFactors = 4,
         Spectral = 5,
-        
+
     }
 
     public enum IdfFieldType

@@ -69,7 +69,7 @@ namespace tests
             var alphaNumeric = context.field_id().ALPHA_OPTION() != null
                 ? IdfFieldAlphaNumeric.Alpha
                 : IdfFieldAlphaNumeric.Numeric;
-            
+
             if (IsStartOfExtensibleField(context.field_properties()))
             {
                 _inExtensibleSection = true;
@@ -85,7 +85,7 @@ namespace tests
 
         public bool IsStartOfExtensibleField(IddParser.Field_propertiesContext context) =>
             context.field_property().Any(propertyContext => propertyContext.BEGIN_EXTENSIBLE_STATEMENT() != null);
-        
+
         public IdfField GetField(IddParser.Field_propertiesContext context, IdfFieldAlphaNumeric alphaNumeric)
         {
             IdfField field = new IdfField();
@@ -94,7 +94,7 @@ namespace tests
 
             IddParser.Field_propertiesContext propertyContext = context;
             IddParser.Field_propertyContext[] properties = propertyContext.field_property();
-            
+
             foreach (IddParser.Field_propertyContext prop in properties)
             {
                 if (prop.AUTOSIZABLE_STATEMENT() != null) field.AutoSizeable = true;
@@ -103,8 +103,8 @@ namespace tests
                 else if (prop.UNITS_STATEMENT() != null) field.Units =  prop.UNITS_STATEMENT().GetText().Substring(7).Trim();
                 else if (prop.KEY_STATEMENT() != null) field.Keys.Add(prop.KEY_STATEMENT().GetText().Substring(5).Trim());
                 else if (prop.FIELD_STATEMENT() != null) field.Name = prop.FIELD_STATEMENT().GetText().Substring(7).Trim();
-                else if (prop.REFERENCE_STATEMENT() != null) field.ReferenceList = prop.REFERENCE_STATEMENT().GetText().Substring(11).Trim();
-                else if (prop.OBJECT_LIST_STATEMENT() != null) field.ObjectList = prop.OBJECT_LIST_STATEMENT().GetText().Substring(13).Trim();
+                else if (prop.REFERENCE_STATEMENT() != null) field.ReferenceList.Add(prop.REFERENCE_STATEMENT().GetText().Substring(11).Trim());
+                else if (prop.OBJECT_LIST_STATEMENT() != null) field.ObjectList.Add(prop.OBJECT_LIST_STATEMENT().GetText().Substring(13).Trim());
                 else if (prop.minimum_inclusive_statement() != null)
                 {
                     field.MinType = IdfFieldMinMaxType.Inclusive;
@@ -120,13 +120,13 @@ namespace tests
                     field.Default = prop.DEFAULT_STATEMENT().GetText().Substring(9).Trim();
                 }
             }
-            
+
             return field;
         }
 
         public override void EnterField_property(IddParser.Field_propertyContext context)
         {
-            
+
         }
 
         public override void ExitObject(IddParser.ObjectContext context)

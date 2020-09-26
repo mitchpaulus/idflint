@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
-using Idf;
 
 namespace dotnet
 {
@@ -36,85 +34,6 @@ namespace dotnet
             string msg, RecognitionException e)
         {
             Errors.Add(new IdfParseError(line, charPositionInLine, msg));
-        }
-    }
-
-
-    public class IdfLinter
-    {
-        private readonly TextReader _reader;
-
-        public IdfLinter(TextReader reader) => _reader = reader;
-
-        public IdfLinter(string idf) => _reader = new StringReader(idf);
-
-        public List<IdfError> Lint()
-        {
-            List<IdfError> errors = new List<IdfError>();
-
-            AntlrInputStream input = new AntlrInputStream(_reader);
-
-            IdfErrorListener idfParseErrorListener = new IdfErrorListener();
-
-            IdfLexer lexer = new IdfLexer(input);
-
-            lexer.RemoveErrorListeners();
-            IdfLexerErrorListener idfLexerErrorListener = new IdfLexerErrorListener();
-            lexer.AddErrorListener(idfLexerErrorListener);
-
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-
-            IdfParser parser = new IdfParser(tokens);
-
-            parser.RemoveErrorListeners();
-            parser.AddErrorListener(idfParseErrorListener);
-
-            IdfParser.IdfContext tree = parser.idf();
-
-            errors.AddRange(idfLexerErrorListener.Errors);
-            errors.AddRange(idfParseErrorListener.Errors);
-
-            ParseTreeWalker walker = new ParseTreeWalker();
-            IdfLintListener idfLintListener = new IdfLintListener();
-            walker.Walk(idfLintListener, tree);
-
-            var inputData = idfLintListener.IdfObjects;
-
-            errors.AddRange(idfLintListener.errors);
-
-            return errors;
-        }
-
-        // public List<IdfError> GetIdfErrors(Dictionary<string, List<List<string>>> data)
-        // {
-        //
-        //     foreach (string key in data.Keys)
-        //     {
-        //
-        //
-        //     }
-        // }
-
-        public Dictionary<string, List<string>> GetReferenceLists(Dictionary<string, List<List<string>>> data)
-        {
-            Dictionary<string, List<string>> referenceList = new Dictionary<string, List<string>>();
-            foreach (string key in data.Keys)
-            {
-                IdfObject idfObject = IdfObjectList.Objects[key];
-
-                foreach (var fields in data[key])
-                {
-                    var referenceFields = idfObject.ZipWithFields(fields)
-                        .Where(field => !string.IsNullOrWhiteSpace(field.ExpectedField.ReferenceList)).ToList();
-
-                    foreach (var referenceField in referenceFields)
-                    {
-                        referenceList.AddSafe(referenceField.ExpectedField.ReferenceList, referenceField.FoundField);
-                    }
-                }
-            }
-
-            return referenceList;
         }
     }
 }

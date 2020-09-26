@@ -17,12 +17,22 @@ matches the given input.
 
 ## 4. Too many fields provided
 
-The idd defines all possible fields. EnergyPlus may not crash with extra
-fields given depending on the object, but this is still bad practice.
+The idd file defines all possible fields. EnergyPlus may not crash with
+extra fields given depending on the object, but this is still bad
+practice.
 
 ## 5. Numeric field not entered as numeric
 
 Fields can be either Alphanumeric or numeric. This error is flagged
 when the field is expected to be a number and it is not.
 
+## 6. Field not found in reference list
 
+Many fields reference lists built from other defined objects. For
+example, many schedules can be defined, and in other objects, a schedule
+is referenced.
+
+## 7. Duplicate name for object in reference list
+
+An identifier for an object needs to be unique within a reference group
+list. An example is that two schedules cannot have the same name.

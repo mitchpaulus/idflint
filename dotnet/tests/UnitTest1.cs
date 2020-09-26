@@ -59,6 +59,20 @@ namespace tests
         }
 
         [Test]
+        public void TestFieldNotFoundInReferenceList()
+        {
+            string idf = "Schedule:Constant,Constant Schedule,Type not found,1;\n\n";
+            AssertError(idf, typeof(FieldNotFoundInReferenceListError));
+        }
+
+        [Test]
+        public void TestDuplicateNameInReferenceList()
+        {
+            string idf = "Schedule:Constant,Schedule1,,1;\n\nSchedule:Constant,Schedule1,,1;";
+            AssertError(idf, typeof(DuplicateNameInReferenceListError), true);
+        }
+
+        [Test]
         public void TestBuildingReferenceList()
         {
             string idf = "Schedule:Constant,  Test Schedule  ,,5;";
@@ -72,13 +86,13 @@ namespace tests
 
             IdfLinter linter = new IdfLinter(idf);
 
-            var referenceList = linter.GetReferenceLists(idfLintListener.IdfObjects);
+            var result = linter.GetReferenceLists(idfLintListener.IdfObjects);
 
-            Assert.IsTrue(referenceList.Count() == 1);
+            Assert.IsTrue(result.ReferenceList.Count() == 1);
 
-            Assert.IsTrue(referenceList["ScheduleNames"].Count() == 1);
+            Assert.IsTrue(result.ReferenceList["ScheduleNames"].Count() == 1);
 
-            Assert.IsTrue(referenceList["ScheduleNames"][0] == "Test Schedule");
+            Assert.IsTrue(result.ReferenceList["ScheduleNames"].Contains("Test Schedule"));
 
         }
 
