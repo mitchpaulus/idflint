@@ -205,7 +205,7 @@ namespace dotnet
 
                     bool success = parsesAsDouble || properlyAutocalculatable || isBlankAndNotRequired;
                     if (!success) errors.Add(new NumericFieldNotNumericError(actualField.Start, expectedField.Name, trimmedFieldValue));
-                    else
+                    else if (parsesAsDouble)
                     {
                         if (expectedField.MinType == IdfFieldMinMaxType.Inclusive && value < expectedField.Minimum)
                             errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Minimum, expectedField.MinType, actualField.GetText(), expectedField.Minimum, expectedField.Name));
