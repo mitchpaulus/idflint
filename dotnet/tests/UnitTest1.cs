@@ -73,6 +73,51 @@ namespace tests
         }
 
         [Test]
+        public void TestInclusiveMinimum()
+        {
+            string idf = "Timestep,0;";
+            AssertError(idf, typeof(NumericFieldOutOfRangeError));
+        }
+
+        [Test]
+        public void TestInclusiveMinimumDoesNotThrowOnEquals()
+        {
+            string idf = "Timestep,1;";
+
+            IdfLinter linter = new IdfLinter(idf);
+            Assert.IsTrue(linter.Lint().Count == 0);
+        }
+
+        [Test]
+        public void TestExclusiveMinimum()
+        {
+            string idf = "Material:AirGap,Gap,0";
+            AssertError(idf, typeof(NumericFieldOutOfRangeError));
+        }
+
+        [Test]
+        public void TestInclusiveMaximum()
+        {
+            string idf = "Timestep,100;";
+            AssertError(idf, typeof(NumericFieldOutOfRangeError));
+        }
+
+        [Test]
+        public void TestInclusiveMaximumDoesNotThrowOnEquals()
+        {
+            string idf = "Timestep,60;";
+            IdfLinter linter = new IdfLinter(idf);
+            Assert.IsTrue(linter.Lint().Count == 0);
+        }
+
+        [Test]
+        public void TestExclusiveMaximum()
+        {
+            string idf = "ZoneControl:Thermostat:OperativeTemperature,Name,Constant,0.9;";
+            AssertError(idf, typeof(NumericFieldOutOfRangeError));
+        }
+
+        [Test]
         public void TestBuildingReferenceList()
         {
             string idf = "Schedule:Constant,  Test Schedule  ,,5;";

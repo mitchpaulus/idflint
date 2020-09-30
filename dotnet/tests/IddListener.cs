@@ -108,12 +108,22 @@ namespace tests
                 else if (prop.minimum_inclusive_statement() != null)
                 {
                     field.MinType = IdfFieldMinMaxType.Inclusive;
-                    field.Minimum = double.Parse(prop.minimum_inclusive_statement().minval.Text);
+                    field.Minimum = double.Parse(prop.minimum_inclusive_statement().minval.Text.Trim());
+                }
+                else if (prop.minimum_exclusive_statement() != null)
+                {
+                    field.MinType = IdfFieldMinMaxType.Exclusive;
+                    field.Minimum = double.Parse(prop.minimum_exclusive_statement().minval.Text.Trim());
                 }
                 else if (prop.maximum_inclusive_statement() != null)
                 {
-                    field.MinType = IdfFieldMinMaxType.Inclusive;
-                    field.Maximum = double.Parse(prop.maximum_inclusive_statement().maxval.Text);
+                    field.MaxType = IdfFieldMinMaxType.Inclusive;
+                    field.Maximum = double.Parse(prop.maximum_inclusive_statement().maxval.Text.Trim());
+                }
+                else if (prop.maximum_exclusive_statement() != null)
+                {
+                    field.MaxType = IdfFieldMinMaxType.Exclusive;
+                    field.Maximum = double.Parse(prop.maximum_exclusive_statement().maxval.Text.Trim());
                 }
                 else if (prop.DEFAULT_STATEMENT() != null)
                 {

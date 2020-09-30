@@ -36,3 +36,9 @@ is referenced.
 
 An identifier for an object needs to be unique within a reference group
 list. An example is that two schedules cannot have the same name.
+
+
+## 8. Numeric value out of range
+
+Many numeric fields need to have values that are above or below certain
+thresholds.

@@ -205,15 +205,22 @@ namespace dotnet
 
                     bool success = parsesAsDouble || properlyAutocalculatable || isBlankAndNotRequired;
                     if (!success) errors.Add(new NumericFieldNotNumericError(actualField.Start, expectedField.Name, trimmedFieldValue));
+                    else
+                    {
+                        if (expectedField.MinType == IdfFieldMinMaxType.Inclusive && value < expectedField.Minimum)
+                            errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Minimum, expectedField.MinType, actualField.GetText(), expectedField.Minimum, expectedField.Name));
+                        else if (expectedField.MinType == IdfFieldMinMaxType.Exclusive && value <= expectedField.Minimum)
+                            errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Minimum, expectedField.MinType, actualField.GetText(), expectedField.Minimum, expectedField.Name));
+                        else if (expectedField.MaxType == IdfFieldMinMaxType.Inclusive && value > expectedField.Maximum)
+                            errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Maximum, expectedField.MaxType, actualField.GetText(), expectedField.Maximum, expectedField.Name));
+                        else if (expectedField.MaxType == IdfFieldMinMaxType.Exclusive && value >= expectedField.Maximum)
+                            errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Maximum, expectedField.MaxType, actualField.GetText(), expectedField.Maximum, expectedField.Name));
+                    }
                 }
             }
 
             return errors;
         }
-
-
-
-
     }
 
     public class BoundField
@@ -248,6 +255,9 @@ namespace dotnet
         Alpha = 0,
         Numeric = 1,
     }
+
+
+
 
     public enum IdfFieldMinMaxType
     {
