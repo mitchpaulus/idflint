@@ -60,22 +60,21 @@ namespace dotnet
                 }
             }
 
-            var referenceList = GetReferenceLists(idfLintListener.IdfObjects);
+            ReferenceListResult referenceListResult = GetReferenceLists(idfLintListener.IdfObjects);
 
-            errors.AddRange(referenceList.Errors);
+            errors.AddRange(referenceListResult.Errors);
 
-            foreach (var boundField in inputData.BoundFields())
+            foreach (var boundField in inputData.BoundFields().Where(field => field.ExpectedField.ObjectList.Any()))
             {
-                foreach (string objectList in boundField.ExpectedField.ObjectList)
-                {
-                    // It's not an error if the field is empty and not required.
-                    if (string.IsNullOrWhiteSpace(boundField.FoundField)) continue;
+                // It's not an error if the field is empty and not required.
+                if (string.IsNullOrWhiteSpace(boundField.FoundField) && !boundField.ExpectedField.Required) continue;
 
-                    if (!referenceList.ReferenceList.ContainsKey(objectList) ||
-                        !referenceList.ReferenceList[objectList].Contains(boundField.FoundField))
-                    {
-                        errors.Add(new FieldNotFoundInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, objectList));
-                    }
+                Dictionary<string, HashSet<string>> referenceList = referenceListResult.ReferenceList;
+
+                if (!boundField.ExpectedField.ObjectList.Any(objectListType =>
+                    referenceList.ContainsKey(objectListType) && referenceList[objectListType].Contains(boundField.FoundField)))
+                {
+                    errors.Add(new FieldNotFoundInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, boundField.ExpectedField.ObjectList));
                 }
             }
 
@@ -107,8 +106,8 @@ namespace dotnet
                     {
                         foreach (var refList in boundField.ExpectedField.ReferenceList)
                         {
-                            if (!referenceListDictionary.ContainsKey(refList)) referenceListDictionary[refList] = new HashSet<string>();
-                            bool addedSuccessfully = referenceListDictionary[refList].Add(boundField.FoundField);
+                            if (!referenceListDictionary.ContainsKey(refList)) referenceListDictionary[refList] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                            bool addedSuccessfully = referenceListDictionary[refList].Add(boundField.FoundField.Trim());
                             if (!addedSuccessfully)
                             {
                                 errors.Add(new DuplicateNameInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, refList));

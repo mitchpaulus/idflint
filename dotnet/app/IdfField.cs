@@ -297,8 +297,15 @@ namespace dotnet
 
         public static string OrList(this IEnumerable<string> values)
         {
-            var enumerable = values.ToList();
-            return enumerable.Count() == 2 ? $"{enumerable.First()} or {enumerable.Last()}" : $"{string.Join(", ", enumerable.Take(enumerable.Count() - 1))}, or {enumerable.Last()}";
+            List<string> enumerable = values.ToList();
+            return enumerable.Count() switch
+            {
+                1 => enumerable.First(),
+                2 => $"{enumerable.First()} or {enumerable.Last()}",
+                _ => enumerable.Count > 2
+                    ? $"{string.Join(", ", enumerable.Take(enumerable.Count - 1))}, or {enumerable.Last()}"
+                    : string.Empty
+            };
         }
 
         public static string AndList(this IEnumerable<string> values)
