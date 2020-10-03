@@ -49,6 +49,9 @@ namespace dotnet
         {
             return data.BoundObjects().SelectMany(tuple => tuple.idfObject.ZipWithFields(tuple.objectContext.fields().field())).ToList();
         }
+
+        public static string JoinStrings(this IEnumerable<string> strings) => string.Join(",", strings.Select(s => $"\"{s}\""));
+
     }
 
     public static class IdfObjectExtensions

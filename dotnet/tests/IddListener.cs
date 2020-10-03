@@ -145,4 +145,26 @@ namespace tests
             Builder.Append($"            {{\"{currentObject.Name}\", {currentObject.WriteObjectConstructor()} }},\n");
         }
     }
+
+
+    public class ReferenceClassIddListener : IddBaseListener
+    {
+        public Dictionary<string, HashSet<string>> ReferenceClasses = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        public override void EnterObject(IddParser.ObjectContext context)
+        {
+            foreach (IddParser.FieldContext field in context.fields().field())
+            {
+                var properties = field.field_properties().field_property();
+                foreach (var prop in properties)
+                {
+                    if (prop.REFERENCE_CLASS_NAME_STATEMENT() != null)
+                    {
+                        var referenceClassName = prop.REFERENCE_CLASS_NAME_STATEMENT().GetText().Substring(22).Trim();
+                        if (!ReferenceClasses.ContainsKey(referenceClassName))ReferenceClasses[referenceClassName] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        ReferenceClasses[referenceClassName].Add(context.object_header().OBJECT_NAME().GetText().Trim());
+                    }
+                }
+            }
+        }
+    }
 }

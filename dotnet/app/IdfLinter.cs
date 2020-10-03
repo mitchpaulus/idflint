@@ -71,8 +71,9 @@ namespace dotnet
 
                 Dictionary<string, HashSet<string>> referenceList = referenceListResult.ReferenceList;
 
-                if (!boundField.ExpectedField.ObjectList.Any(objectListType =>
-                    referenceList.ContainsKey(objectListType) && referenceList[objectListType].Contains(boundField.FoundField)))
+                var inRegularReferenceList = boundField.ExpectedField.ObjectList.Any(objectListType => InReferenceList(referenceList, objectListType, boundField));
+                var inReferenceClassList = boundField.ExpectedField.ObjectList.Any(objectListType => InReferenceClassList(objectListType, boundField.FoundField));
+                if (!inRegularReferenceList && !inReferenceClassList)
                 {
                     errors.Add(new FieldNotFoundInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, boundField.ExpectedField.ObjectList));
                 }
@@ -80,6 +81,15 @@ namespace dotnet
 
             return errors;
         }
+
+        private bool InReferenceList(Dictionary<string, HashSet<string>> referenceList, string objectListType, BoundField boundField)
+        {
+            return referenceList.ContainsKey(objectListType) && referenceList[objectListType].Contains(boundField.FoundField);
+        }
+
+        public bool InReferenceClassList(string objectListType, string foundField) =>
+            IdfReferenceClassList.List.ContainsKey(objectListType) &&
+            IdfReferenceClassList.List[objectListType].Contains(foundField);
 
         /// <summary>
         /// Build up a Dictionary data structure for reference lists.
@@ -114,18 +124,7 @@ namespace dotnet
                                 errors.Add(new DuplicateNameInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, refList));
                             }
                         }
-
                     }
-                }
-            }
-
-            // Add the actual object class name to the reference list. See \reference-class-name in the IDD.
-            foreach ((var _, IdfObject idfObject) in IdfObjectList.Objects)
-            {
-                foreach (var referenceClassStatement in idfObject.Fields.SelectMany(idfField => idfField.ReferenceClassList))
-                {
-                    if (!referenceListDictionary.ContainsKey(referenceClassStatement)) referenceListDictionary[referenceClassStatement] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    referenceListDictionary[referenceClassStatement].Add(idfObject.Name);
                 }
             }
 

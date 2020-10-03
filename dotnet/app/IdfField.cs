@@ -89,11 +89,9 @@ namespace dotnet
                 $"new IdfField({string.Join(",", parameters)})";
         }
 
-        private string WriteKeys() => $"new HashSet<string>(StringComparer.OrdinalIgnoreCase){{{JoinStrings(Keys)}}}";
+        private string WriteKeys() => $"new HashSet<string>(StringComparer.OrdinalIgnoreCase){{{Keys.JoinStrings()}}}";
 
-        private string WriteStringList(List<string> strings) => $"new List<string>{{{JoinStrings(strings)}}}";
-
-        private string JoinStrings(IEnumerable<string> strings) => string.Join(",", strings.Select(s => $"\"{s}\""));
+        private string WriteStringList(IEnumerable<string> strings) => $"new List<string>{{{strings.JoinStrings()}}}";
     }
 
     public class IdfObject
