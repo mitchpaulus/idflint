@@ -104,6 +104,7 @@ namespace dotnet
 
                     foreach (var boundField in boundFields)
                     {
+                        // Add the field text to the reference list. See \reference in the IDD.
                         foreach (var refList in boundField.ExpectedField.ReferenceList)
                         {
                             if (!referenceListDictionary.ContainsKey(refList)) referenceListDictionary[refList] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -113,7 +114,18 @@ namespace dotnet
                                 errors.Add(new DuplicateNameInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, refList));
                             }
                         }
+
                     }
+                }
+            }
+
+            // Add the actual object class name to the reference list. See \reference-class-name in the IDD.
+            foreach ((var _, IdfObject idfObject) in IdfObjectList.Objects)
+            {
+                foreach (var referenceClassStatement in idfObject.Fields.SelectMany(idfField => idfField.ReferenceClassList))
+                {
+                    if (!referenceListDictionary.ContainsKey(referenceClassStatement)) referenceListDictionary[referenceClassStatement] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    referenceListDictionary[referenceClassStatement].Add(idfObject.Name);
                 }
             }
 

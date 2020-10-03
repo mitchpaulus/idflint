@@ -66,6 +66,13 @@ namespace tests
         }
 
         [Test]
+        public void TestFieldNotFoundInReferenceClassList()
+        {
+            string idf = "Pipe:Adiabatic,Pipe,Node1,Node2;  Branch,Name,,Not Valid,Pipe,Node1,Node2;";
+            AssertError(idf, typeof(FieldNotFoundInReferenceListError));
+        }
+
+        [Test]
         public void TestDuplicateNameInReferenceList()
         {
             string idf = "Schedule:Constant,Schedule1,,1;\n\nSchedule:Constant,Schedule1,,1;";
@@ -116,6 +123,7 @@ namespace tests
             string idf = "ZoneControl:Thermostat:OperativeTemperature,Name,Constant,0.9;";
             AssertError(idf, typeof(NumericFieldOutOfRangeError));
         }
+
 
         [Test]
         public void TestBuildingReferenceList()

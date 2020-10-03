@@ -21,6 +21,8 @@ namespace dotnet
 
         public bool ExtensibleBegin { get; set; } = false;
 
+        public List<string> ReferenceClassList { get; set; } = new List<string>();
+
         public List<string> ReferenceList { get; set; } = new List<string>();
 
         public List<string> ObjectList { get; set; } = new List<string>();
@@ -43,6 +45,7 @@ namespace dotnet
                         IdfFieldMinMaxType minType,
                         IdfFieldMinMaxType maxType,
                         List<string> referenceList,
+                        List<string> referenceClassList,
                         List<string> objectList)
         {
             Required = required;
@@ -58,6 +61,7 @@ namespace dotnet
             MinType = minType;
             MaxType = maxType;
             ReferenceList = referenceList;
+            ReferenceClassList = referenceClassList;
             ObjectList = objectList;
         }
 
@@ -78,6 +82,7 @@ namespace dotnet
                 $"IdfFieldMinMaxType.{MinType}",
                 $"IdfFieldMinMaxType.{MaxType}",
                 WriteStringList(ReferenceList),
+                WriteStringList(ReferenceClassList),
                 WriteStringList(ObjectList),
             };
             return
@@ -127,7 +132,7 @@ namespace dotnet
 
         public string WriteObjectConstructor()
         {
-            var fields = string.Join(",", Fields.Select(field => field.WriteConstructor() ));
+            var fields = string.Join(",", Fields.Select(field => field.WriteConstructor()));
             List<string> parameters = new List<string>()
             {
                 Name.WrapInQuotes(),

@@ -32,7 +32,8 @@ namespace Idf {
 
         public Dictionary<string, List<IdfParser.ObjectContext>> IdfObjects = new Dictionary<string, List<IdfParser.ObjectContext>>();
 
-        public override void EnterObject(IdfParser.ObjectContext context) {
+        public override void EnterObject(IdfParser.ObjectContext context)
+        {
             string typeName = context.ALPHA().GetText();
 
             if (!IdfObjectList.Objects.ContainsKey(typeName))
@@ -43,8 +44,6 @@ namespace Idf {
             }
 
             IdfObjects.AddSafe(typeName, context);
-
-            IdfObject idfObject = IdfObjectList.Objects[typeName];
         }
     }
 }
