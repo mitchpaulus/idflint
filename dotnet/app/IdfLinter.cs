@@ -53,7 +53,7 @@ namespace dotnet
 
             foreach (var inputDataKey in inputData.Keys)
             {
-                IdfObject idfObject = IdfObjectList.Objects[inputDataKey];
+                IdfObject idfObject = IdfObjectList.GetIdfObject(inputDataKey);
                 foreach (var objectContext in inputData[inputDataKey])
                 {
                     errors.AddRange(idfObject.FieldChecks(objectContext));
@@ -105,7 +105,7 @@ namespace dotnet
 
             foreach (string key in data.Keys)
             {
-                IdfObject idfObject = IdfObjectList.Objects[key];
+                IdfObject idfObject = IdfObjectList.GetIdfObject(key);
 
                 foreach (var objectContext in data[key])
                 {

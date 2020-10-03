@@ -36,7 +36,7 @@ namespace Idf {
         {
             string typeName = context.ALPHA().GetText();
 
-            if (!IdfObjectList.Objects.ContainsKey(typeName))
+            if (!IdfObjectList.ContainsKey(typeName))
             {
                 errors.Add(new ObjectTypeNotFoundError(context.ALPHA().Symbol, typeName));
                 // Return early and don't check any of the fields if we don't know what it is.

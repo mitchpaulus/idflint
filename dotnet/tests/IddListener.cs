@@ -142,7 +142,7 @@ namespace tests
 
         public override void ExitObject(IddParser.ObjectContext context)
         {
-            Builder.Append($"            {{\"{currentObject.Name}\", {currentObject.WriteObjectConstructor()} }},\n");
+            Builder.Append($"            {{\"{currentObject.Name}\", () => {currentObject.WriteObjectConstructor()} }},\n");
         }
     }
 
