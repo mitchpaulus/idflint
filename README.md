@@ -11,7 +11,7 @@ comma in the idf file was missing.
 `idflint` aims to speed up development and debugging time. It does this
 by providing instant feedback about the validity of the complete input
 file without worrying about the energy calculations themselves. It is
-heavily inspired by other linting tools such as [ESLint](eslint.org).
+heavily inspired by other linting tools such as [ESLint](https://eslint.org).
 
 ## Installation and Usage
 
