@@ -62,7 +62,7 @@ namespace tests
             sb.Append("    }\n");
             sb.Append("}\n");
 
-            File.WriteAllText("/home/mitch/repos/idf-lint/dotnet/app/IdfObjectList.cs", sb.ToString());
+            File.WriteAllText("/home/mitch/repos/idf-lint/app/IdfObjectList.cs", sb.ToString());
         }
 
         [Test]
@@ -105,7 +105,7 @@ namespace tests
             sb.Append("    }\n");
             sb.Append("}\n");
 
-            File.WriteAllText("/home/mitch/repos/idf-lint/dotnet/app/IdfReferenceClassList.cs", sb.ToString());
+            File.WriteAllText("/home/mitch/repos/idf-lint/app/IdfReferenceClassList.cs", sb.ToString());
         }
     }
 }
