@@ -1,5 +1,7 @@
 # idflint
 
+<p align="center"><img src="brand/logo.png" width="30%">  </img></p>
+
 `idflint` is a linter for EnergyPlus input files. `idflint` checks the
 entire input file for mistakes that would normally be caught when
 running the simulation.
