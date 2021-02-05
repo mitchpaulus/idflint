@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using dotnet.checks;
 
 namespace dotnet
@@ -92,6 +93,24 @@ namespace dotnet
         private string WriteKeys() => $"new HashSet<string>(StringComparer.OrdinalIgnoreCase){{{Keys.JoinStrings()}}}";
 
         private string WriteStringList(IEnumerable<string> strings) => $"new List<string>{{{strings.JoinStrings()}}}";
+
+        public string WriteDefaultLine(bool terminate, int fieldNum)
+        {
+            List<string> options = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(Units)) options.Add($"{{{Units}}}");
+            if (HasDefault) options.Add($"Def: {Default}");
+            if (Keys.Any()) options.Add($"[{string.Join(", ", Keys)}]");
+            if (ReferenceList.Any()) options.Add($"RefList: [{string.Join(", ", ReferenceList)}]");
+            if (ReferenceClassList.Any()) options.Add($"RefClassList: [{string.Join(", ", ReferenceClassList)}]");
+            if (ObjectList.Any()) options.Add($"[{string.Join(", ", ObjectList)}]");
+            if (AutoCalculatable) options.Add("AC");
+            if (AutoSizeable) options.Add("AS");
+            if (Required) options.Add("REQ");
+            options.Add($"#{fieldNum}");
+
+            return $"  {(HasDefault ? Default : "")}{(terminate ? ";" : ",")}   ! {Name} {string.Join(", ", options)}\n";
+        }
     }
 
     public class IdfObject
@@ -223,6 +242,26 @@ namespace dotnet
             }
 
             return errors;
+        }
+
+        public string PrintDefaultObject()
+        {
+            StringBuilder builder = new StringBuilder();
+
+            if (MinNumberOfFields != null) builder.Append($"! Min Fields: {MinNumberOfFields}\n");
+            builder.Append($"{Name},\n");
+
+            var index = Fields.FindIndex(field => field.ExtensibleBegin);
+
+            var printFields = index < 0 ? Fields : Fields.Take(index + 1 + ExtensibleCountSize).ToList();
+
+            var fields = printFields.Take(printFields.Count - 1)
+                .Select((field, i) => (Fields: field, FieldNum: i + 1) )
+                .Select(tuple => tuple.Fields.WriteDefaultLine(false, tuple.FieldNum))
+                .ToList();
+            foreach (var field in fields) builder.Append(field);
+            builder.Append(printFields.Last().WriteDefaultLine(true, printFields.Count));
+            return builder.ToString();
         }
     }
 

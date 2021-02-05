@@ -13,6 +13,8 @@ namespace tests
         public readonly StringBuilder Builder = new StringBuilder();
         private IdfObject currentObject = new IdfObject();
 
+        public List<IdfObject> allObjects = new List<IdfObject>();
+
         private bool _inExtensibleSection = false;
         private int _beginExtensibleIndex = 0;
 
@@ -142,6 +144,7 @@ namespace tests
 
         public override void ExitObject(IddParser.ObjectContext context)
         {
+            allObjects.Add(currentObject);
             Builder.Append($"            {{\"{currentObject.Name}\", () => {currentObject.WriteObjectConstructor()} }},\n");
         }
     }

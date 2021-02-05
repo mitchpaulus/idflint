@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
@@ -21,11 +23,9 @@ namespace tests
             CommonTokenStream tokens = new CommonTokenStream(lexer);
 
             IddParser parser = new IddParser(tokens);
-
-            IddListener listener = new IddListener();
-
             var tree = parser.idd();
 
+            IddListener listener = new IddListener();
             ParseTreeWalker walker = new ParseTreeWalker();
 
             walker.Walk(listener, tree);
@@ -106,6 +106,57 @@ namespace tests
             sb.Append("}\n");
 
             File.WriteAllText("/home/mitch/repos/idf-lint/app/IdfReferenceClassList.cs", sb.ToString());
+        }
+
+        [Test]
+        public void BuildAllObjectTypeAntlr()
+        {
+            var tree = IddTree.Tree();
+
+            ObjectNameListener listener = new ObjectNameListener();
+            ParseTreeWalker walker = new ParseTreeWalker();
+
+            walker.Walk(listener, tree);
+
+            string typeLines = string.Join("", listener.types.Select(s => $"  {s} |\n"));
+
+            string output = $"fragment object_type : \n{typeLines}";
+
+            File.WriteAllText("/home/mitch/repos/idf-plus/antlr/types.g4", output);
+        }
+
+        [Test]
+        public void BuildDefaultFiles()
+        {
+            IddParser.IddContext tree = IddTree.Tree();
+            ParseTreeWalker walker = new ParseTreeWalker();
+
+            IddListener listener = new IddListener();
+
+            walker.Walk(listener, tree);
+
+            string directory = "/home/mitch/tmp/ep_94";
+
+            foreach (var obj in listener.allObjects)
+            {
+                string filepath = $"{directory}/{obj.Name}.idf";
+                File.WriteAllText(filepath, obj.PrintDefaultObject());
+            }
+        }
+
+        public class ObjectNameListener : IddBaseListener
+        {
+            public List<string> types = new List<string>();
+            public override void EnterObject_header(IddParser.Object_headerContext context)
+            {
+                var name = context.OBJECT_NAME().GetText().Trim();
+
+                List<string> fragments = name.
+                    Select(c => char.IsLetter(c) ? char.ToUpper(c).ToString() : $"'{c}'")
+                    .ToList();
+
+                types.Add(string.Join(" ", fragments));
+            }
         }
     }
 }
