@@ -10,16 +10,15 @@ object : ALPHA FIELD_SEPARATOR COMMENT* fields ;
 
 fields : field (FIELD_SEPARATOR COMMENT* field)* OBJECT_TERMINATOR COMMENT* ;
 
-COMMENT :  '!' .*? '\n' ;
+COMMENT :  '!' .*? '\r'?'\n' ;
 
 FIELD_SEPARATOR   : ',' ;
+
 OBJECT_TERMINATOR : ';' ;
 
-/*OBJECT_TYPE : [a-zA-Z0-9:-]+ ;*/
+NUMERIC : '-'?(([1-9][0-9]*|'0')('.'[0-9]*)? | ('.'[0-9]+)) ([eE]'-'?[0-9]+)? ;
 
-NUMERIC : '-'?(([1-9][0-9]*|'0')('.'[0-9]+)? | ('.'[0-9]+))([eE]'-'?[0-9]+)? ;
-
-ALPHA : [a-zA-Z0-9] ~[,;!]* [a-zA-Z0-9] ;
+ALPHA : ~[ \t,;!\r\n] (~[,;!\r\n])* ;
 
 field : NUMERIC | ALPHA | ;
 

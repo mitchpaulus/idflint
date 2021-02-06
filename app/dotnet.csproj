@@ -3,7 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>idflint</AssemblyName>
+    <Company>Mitchell T. Paulus</Company>
+    <Product>idflint</Product>
+      <RuntimeIdentifiers>
+          win-x64;linux-x64;osx-x64
+      </RuntimeIdentifiers>
   </PropertyGroup>
+
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.8.0" />
