@@ -6,9 +6,9 @@ namespace tests
 {
     public static class IddTree
     {
-        public static IddParser.IddContext Tree()
+        public static IddParser.IddContext Tree(string iddPath)
         {
-            TextReader reader = new StreamReader("/usr/local/EnergyPlus-9-4-0/Energy+.idd");
+            TextReader reader = new StreamReader(iddPath);
 
             AntlrInputStream input = new AntlrInputStream(reader);
 

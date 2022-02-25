@@ -111,7 +111,7 @@ namespace tests
         [Test]
         public void BuildAllObjectTypeAntlr()
         {
-            var tree = IddTree.Tree();
+            var tree = IddTree.Tree("/usr/local/EnergyPlus-9-4-0/Energy+.idd");
 
             ObjectNameListener listener = new ObjectNameListener();
             ParseTreeWalker walker = new ParseTreeWalker();
@@ -128,14 +128,14 @@ namespace tests
         [Test]
         public void BuildDefaultFiles()
         {
-            IddParser.IddContext tree = IddTree.Tree();
+            IddParser.IddContext tree = IddTree.Tree("/usr/local/EnergyPlus-9.6.0-f420c06a69-Linux-Ubuntu20.04-x86_64/Energy+.idd");
             ParseTreeWalker walker = new ParseTreeWalker();
 
             IddListener listener = new IddListener();
 
             walker.Walk(listener, tree);
 
-            string directory = "/home/mitch/tmp/ep_94";
+            string directory = "/home/mitch/tmp/ep_96";
 
             foreach (var obj in listener.allObjects)
             {

@@ -222,10 +222,13 @@ namespace dotnet
                 if (expectedField.AlphaNumeric == IdfFieldAlphaNumeric.Numeric)
                 {
                     bool properlyAutocalculatable = (string.Equals(trimmedFieldValue, "autocalculate", StringComparison.OrdinalIgnoreCase) && expectedField.AutoCalculatable);
+                    bool properlyAutosizeable =
+                        (string.Equals(trimmedFieldValue, "autosize", StringComparison.OrdinalIgnoreCase) &&
+                         expectedField.AutoSizeable);
                     bool parsesAsDouble = double.TryParse(trimmedFieldValue, out double value);
                     var isBlankAndNotRequired = (string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required));
 
-                    bool success = parsesAsDouble || properlyAutocalculatable || isBlankAndNotRequired;
+                    bool success = parsesAsDouble || properlyAutocalculatable || isBlankAndNotRequired || properlyAutosizeable;
                     if (!success) errors.Add(new NumericFieldNotNumericError(actualField.Start, expectedField.Name, trimmedFieldValue));
                     else if (parsesAsDouble)
                     {
