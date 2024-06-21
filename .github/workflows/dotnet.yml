@@ -17,4 +17,4 @@ jobs:
     - name: Build
       run: dotnet build
     - name: Test NUnit
-      run: dotnet test --filter FullyQualifiedName~tests.Tests --verbosity minimal tests/UnitTest1.cs
+      run: dotnet test --filter FullyQualifiedName~tests.Tests --no-build --verbosity minimal tests/tests.csproj
