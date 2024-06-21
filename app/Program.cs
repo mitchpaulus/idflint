@@ -12,7 +12,7 @@ namespace dotnet
         {
             if (args.Any(arg => arg == "-h" || arg == "--help"))
             {
-                Console.WriteLine("idf-lint\n\nUSAGE:\nidf-lint idf_file\n\nidf-lint lints your idf-file for great good.\n");
+                Console.WriteLine("idflint\n\nUSAGE:\nidflint idf_file\n\nidflint lints your idf file for great good.\n");
                 return 0;
             }
 
