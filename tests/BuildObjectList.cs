@@ -139,7 +139,7 @@ namespace tests
 
             foreach (var obj in listener.allObjects)
             {
-                string filepath = $"{directory}\\{obj.Name.Replace(":", "\uA789")}.idf";
+                string filepath = $"{directory}\\{obj.Name.Replace(":", "__")}.idf";
                 File.WriteAllText(filepath, obj.PrintDefaultObject());
             }
         }
