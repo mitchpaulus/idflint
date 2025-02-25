@@ -40,7 +40,7 @@ namespace dotnet
         {
             return data.SelectMany(pair =>
             {
-                IdfObject idfObject = IdfObjectList.GetIdfObject(pair.Key);
+                IdfObject idfObject = IdfObjectListV242.GetIdfObject(pair.Key);
                 return pair.Value.Select(context => (context, idfObject));
             }).ToList();
         }

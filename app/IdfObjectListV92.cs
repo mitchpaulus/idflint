@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 namespace dotnet
 {
-    public static class IdfObjectList
+    public static class IdfObjectListV92
     {
         public static bool ContainsKey(string key) => Objects.ContainsKey(key);
         private static readonly Dictionary<string, IdfObject> CachedDictionary = new Dictionary<string, IdfObject>(StringComparer.OrdinalIgnoreCase);

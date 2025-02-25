@@ -1,0 +1,6 @@
+#!/usr/bin/env mshell
+
+soe
+$ANTLR_JAR? not ("$ANTLR_JAR env var not set" wl 1 exit) iff
+[java -jar $ANTLR_JAR -Dlanguage=Java 'Idd.g4'];
+[javac '*.java' glob];

@@ -1,0 +1,4 @@
+#!/usr/bin/env mshell
+
+$ANTLR_JAR? not ("$ANTLR_JAR env var not set" wl 1 exit) iff
+[java -jar $ANTLR_JAR 'Idd.g4'];

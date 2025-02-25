@@ -53,7 +53,7 @@ namespace dotnet
 
             foreach (var inputDataKey in inputData.Keys)
             {
-                IdfObject idfObject = IdfObjectList.GetIdfObject(inputDataKey);
+                IdfObject idfObject = IdfObjectListV242.GetIdfObject(inputDataKey);
                 foreach (var objectContext in inputData[inputDataKey])
                 {
                     errors.AddRange(idfObject.FieldChecks(objectContext));
@@ -88,8 +88,8 @@ namespace dotnet
         }
 
         public bool InReferenceClassList(string objectListType, string foundField) =>
-            IdfReferenceClassList.List.ContainsKey(objectListType) &&
-            IdfReferenceClassList.List[objectListType].Contains(foundField);
+            IdfReferenceClassListV242.List.ContainsKey(objectListType) &&
+            IdfReferenceClassListV242.List[objectListType].Contains(foundField);
 
         /// <summary>
         /// Build up a Dictionary data structure for reference lists.
@@ -105,7 +105,7 @@ namespace dotnet
 
             foreach (string key in data.Keys)
             {
-                IdfObject idfObject = IdfObjectList.GetIdfObject(key);
+                IdfObject idfObject = IdfObjectListV242.GetIdfObject(key);
 
                 foreach (var objectContext in data[key])
                 {

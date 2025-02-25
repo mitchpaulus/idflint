@@ -4,17 +4,17 @@ options {
     language=CSharp;
 }
 
-idd : ( COMMENT | group | NEWLINE )* ;
+idd : ( COMMENT | group )* EOF ;
 
 object : object_header fields;
 
-object_header : OBJECT_NAME FIELD_SEPARATOR (COMMENT | NEWLINE)* object_properties ;
+object_header : OBJECT_NAME FIELD_SEPARATOR COMMENT* object_properties ;
 
 fields  : field* terminating_field ;
 
-terminating_field : field_id OBJECT_TERMINATOR NEWLINE* field_properties ;
+terminating_field : field_id OBJECT_TERMINATOR field_properties ;
 
-field : field_id FIELD_SEPARATOR NEWLINE* field_properties ;
+field : field_id FIELD_SEPARATOR field_properties ;
 
 field_id : ALPHA_OPTION | NUMERIC_OPTION ;
 
@@ -73,7 +73,7 @@ FIELD_TYPE :
 
 AUTOCALCULATABLE_STATEMENT     : '\\autocalculatable' NEWLINE ;
 AUTOSIZABLE_STATEMENT          : '\\autosizable' NEWLINE ;
-BEGIN_EXTENSIBLE_STATEMENT     : '\\begin-extensible' NEWLINE ;
+BEGIN_EXTENSIBLE_STATEMENT     : '\\begin-extensible' ;
 DEFAULT_STATEMENT              : '\\default ' .*? NEWLINE ;
 DEPRECATED_STATEMENT           : '\\deprecated' NEWLINE ;
 EXTENSIBLE_STATEMENT           : '\\extensible' .*? NEWLINE ;
@@ -83,13 +83,13 @@ FORMAT_STATEMENT               : '\\format ' .*? NEWLINE ;
 GROUP_STATEMENT                : '\\group ' .*? NEWLINE ;
 IP_UNITS_STATEMENT             : '\\ip-units ' .*? NEWLINE ;
 KEY_STATEMENT                  : '\\key ' .*? NEWLINE ;
-maximum_exclusive_statement    : '\\maximum< ' maxval=(REALNUMBER | INTEGER) NEWLINE ;
-maximum_inclusive_statement    : '\\maximum ' maxval=(REALNUMBER | INTEGER)  NEWLINE ;
+maximum_exclusive_statement    : '\\maximum' '<' maxval=(REALNUMBER | INTEGER) ;
+maximum_inclusive_statement    : '\\maximum' maxval=(REALNUMBER | INTEGER)  ;
 MEMO_STATEMENT                 : '\\memo ' .*? NEWLINE ;
-min_fields_statement           : '\\min-fields ' INTEGER NEWLINE ;
-minimum_exclusive_statement    : '\\minimum>' minval=(REALNUMBER | INTEGER) NEWLINE ;
-minimum_inclusive_statement    : '\\minimum ' minval=(REALNUMBER | INTEGER) NEWLINE ;
-NOTE_STATEMENT                 : '\\note ' .*? NEWLINE ;
+min_fields_statement           : '\\min-fields ' INTEGER ;
+minimum_exclusive_statement    : '\\minimum' '>' minval=(REALNUMBER | INTEGER) ;
+minimum_inclusive_statement    : '\\minimum' minval=(REALNUMBER | INTEGER) ;
+NOTE_STATEMENT                 : '\\note' .*? NEWLINE ;
 OBJECT_LIST_STATEMENT          : '\\object-list ' .*? NEWLINE ;
 OBSOLETE_STATEMENT             : '\\obsolete ' .*? NEWLINE ;
 REFERENCE_STATEMENT            : '\\reference ' .*? NEWLINE ;
@@ -97,9 +97,9 @@ REFERENCE_CLASS_NAME_STATEMENT : '\\reference-class-name ' .*? NEWLINE ;
 REQUIRED_FIELD_STATEMENT       : '\\required-field' NEWLINE ;
 REQUIRED_OBJECT_STATEMENT      : '\\required-object' NEWLINE ;
 RETAINCASE_STATEMENT           : '\\retaincase' NEWLINE ;
-type_statement                 : '\\type ' FIELD_TYPE NEWLINE ;
+type_statement                 : '\\type ' FIELD_TYPE ;
 UNIQUE_OBJECT_STATEMENT        : '\\unique-object' NEWLINE ;
-units_based_on_field_statement : '\\unitsBasedOnField ' (ALPHA_OPTION | NUMERIC_OPTION) NEWLINE ;
+units_based_on_field_statement : '\\unitsBasedOnField ' (ALPHA_OPTION | NUMERIC_OPTION) ;
 UNITS_STATEMENT                : '\\units ' .*? NEWLINE ;
 
 INTEGER : [1-9][0-9]* ;
@@ -126,7 +126,7 @@ FIELD_SEPARATOR : ',' ;
 
 OBJECT_TERMINATOR : ';' ;
 
-/*Grab as many newlines, including if there is trailing whitespace on previous lines*/
-NEWLINE : ('\r'? '\n')([ ]*('\r'? '\n'))* ;
+WS : [ \t\r\n]+ -> skip ;
 
-WS : [ \t]+ -> skip ;
+/*Grab as many newlines, including if there is trailing whitespace on previous lines*/
+fragment NEWLINE : '\r'? '\n';

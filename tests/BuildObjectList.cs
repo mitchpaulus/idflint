@@ -15,7 +15,7 @@ namespace tests
         [Test]
         public void BuildIdfObjectList()
         {
-            TextReader reader = new StreamReader("/home/mitch/EnergyPlus/idd/V9-2-0-Energy+.idd");
+            TextReader reader = new StreamReader("C:\\EnergyPlusV24-2-0\\Energy+.idd");
 
             AntlrInputStream input = new AntlrInputStream(reader);
 
@@ -62,13 +62,13 @@ namespace tests
             sb.Append("    }\n");
             sb.Append("}\n");
 
-            File.WriteAllText("/home/mitch/repos/idf-lint/app/IdfObjectList.cs", sb.ToString());
+            File.WriteAllText("C:\\Users\\mpaulus\\repos\\idflint\\app\\IdfObjectListV242.cs", sb.ToString());
         }
 
         [Test]
         public void BuildReferenceClassList()
         {
-            TextReader reader = new StreamReader("/home/mitch/EnergyPlus/idd/V9-2-0-Energy+.idd");
+            TextReader reader = new StreamReader("C:\\EnergyPlusV24-2-0\\Energy+.idd");
 
             AntlrInputStream input = new AntlrInputStream(reader);
 
@@ -105,7 +105,7 @@ namespace tests
             sb.Append("    }\n");
             sb.Append("}\n");
 
-            File.WriteAllText("/home/mitch/repos/idf-lint/app/IdfReferenceClassList.cs", sb.ToString());
+            File.WriteAllText("C:\\Users\\mpaulus\\repos\\idflint\\app\\IdfReferenceClassListV242.cs", sb.ToString());
         }
 
         [Test]
@@ -128,18 +128,18 @@ namespace tests
         [Test]
         public void BuildDefaultFiles()
         {
-            IddParser.IddContext tree = IddTree.Tree("/usr/local/EnergyPlus-9.6.0-f420c06a69-Linux-Ubuntu20.04-x86_64/Energy+.idd");
+            IddParser.IddContext tree = IddTree.Tree("C:\\EnergyPlusV24-2-0\\Energy+.idd");
             ParseTreeWalker walker = new ParseTreeWalker();
 
             IddListener listener = new IddListener();
 
             walker.Walk(listener, tree);
 
-            string directory = "/home/mitch/tmp/ep_96";
+            string directory = "C:\\Users\\mpaulus\\idf";
 
             foreach (var obj in listener.allObjects)
             {
-                string filepath = $"{directory}/{obj.Name}.idf";
+                string filepath = $"{directory}\\{obj.Name.Replace(":", "\uA789")}.idf";
                 File.WriteAllText(filepath, obj.PrintDefaultObject());
             }
         }

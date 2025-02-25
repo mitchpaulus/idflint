@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 namespace dotnet
 {
-    public static class IdfReferenceClassList
+    public static class IdfReferenceClassListV92
     {
         public static Dictionary<string, HashSet<string>> List = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase)
         {
