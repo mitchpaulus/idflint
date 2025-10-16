@@ -30,6 +30,7 @@ namespace Idf {
     {
         public List<IdfError> errors = new List<IdfError>();
 
+        // This is a dictionary lookup with the key being the object type name, and the value is the list of associated objects.
         public Dictionary<string, List<IdfParser.ObjectContext>> IdfObjects = new Dictionary<string, List<IdfParser.ObjectContext>>();
 
         public override void EnterObject(IdfParser.ObjectContext context)

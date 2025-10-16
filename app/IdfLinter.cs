@@ -128,8 +128,58 @@ namespace dotnet
                 }
             }
 
+            AddDefaultSpaces(data, referenceListDictionary);
+
             return new ReferenceListResult(referenceListDictionary, errors);
         }
+
+        private static void AddDefaultSpaces(Dictionary<string, List<IdfParser.ObjectContext>> data, Dictionary<string, HashSet<string>> referenceListDictionary)
+        {
+            if (!data.TryGetValue("Zone", out var zoneContexts) || zoneContexts.Count == 0) return;
+
+            var zoneObject = IdfObjectListV242.GetIdfObject("Zone");
+            HashSet<string> zoneNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var zoneContext in zoneContexts)
+            {
+                if (zoneObject.TryGetFieldValue(zoneContext, "Name", out var zoneName) &&
+                    !string.IsNullOrWhiteSpace(zoneName))
+                {
+                    zoneNames.Add(zoneName);
+                }
+            }
+
+            if (zoneNames.Count == 0) return;
+
+            HashSet<string> zonesWithSpaces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (data.TryGetValue("Space", out var spaceContexts) && spaceContexts.Count > 0)
+            {
+                var spaceObject = IdfObjectListV242.GetIdfObject("Space");
+                foreach (var spaceContext in spaceContexts)
+                {
+                    if (spaceObject.TryGetFieldValue(spaceContext, "Zone Name", out var zoneName) &&
+                        !string.IsNullOrWhiteSpace(zoneName))
+                    {
+                        zonesWithSpaces.Add(zoneName);
+                    }
+                }
+            }
+
+            if (!referenceListDictionary.TryGetValue("SpaceNames", out var spaceNames))
+            {
+                spaceNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                referenceListDictionary["SpaceNames"] = spaceNames;
+            }
+
+            foreach (var zoneName in zoneNames)
+            {
+                if (!zonesWithSpaces.Contains(zoneName))
+                {
+                    spaceNames.Add(zoneName);
+                }
+            }
+        }
+
     }
 
     public class ReferenceListResult
