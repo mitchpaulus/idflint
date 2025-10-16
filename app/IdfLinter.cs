@@ -142,8 +142,11 @@ namespace dotnet
 
             foreach (var zoneContext in zoneContexts)
             {
-                var zoneName = GetFieldValue(zoneObject, zoneContext, "Name");
-                if (!string.IsNullOrWhiteSpace(zoneName)) zoneNames.Add(zoneName);
+                if (zoneObject.TryGetFieldValue(zoneContext, "Name", out var zoneName) &&
+                    !string.IsNullOrWhiteSpace(zoneName))
+                {
+                    zoneNames.Add(zoneName);
+                }
             }
 
             if (zoneNames.Count == 0) return;
@@ -154,8 +157,11 @@ namespace dotnet
                 var spaceObject = IdfObjectListV242.GetIdfObject("Space");
                 foreach (var spaceContext in spaceContexts)
                 {
-                    var zoneName = GetFieldValue(spaceObject, spaceContext, "Zone Name");
-                    if (!string.IsNullOrWhiteSpace(zoneName)) zonesWithSpaces.Add(zoneName);
+                    if (spaceContext.TryGetFieldValue(spaceObject, "Zone Name", out var zoneName) &&
+                        !string.IsNullOrWhiteSpace(zoneName))
+                    {
+                        zonesWithSpaces.Add(zoneName);
+                    }
                 }
             }
 
@@ -174,12 +180,6 @@ namespace dotnet
             }
         }
 
-        private static string GetFieldValue(IdfObject idfObject, IdfParser.ObjectContext objectContext, string fieldName)
-        {
-            var boundFields = idfObject.ZipWithFields(objectContext.fields().field());
-            var matchingField = boundFields.FirstOrDefault(field => string.Equals(field.ExpectedField.Name, fieldName, StringComparison.OrdinalIgnoreCase));
-            return matchingField?.FoundField;
-        }
     }
 
     public class ReferenceListResult

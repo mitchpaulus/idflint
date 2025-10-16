@@ -168,6 +168,28 @@ namespace dotnet
 
         public List<BoundField> ZipWithFields(IEnumerable<IdfParser.FieldContext> fields) => Fields.Zip(fields, (field, s) => new BoundField(field, s)).ToList();
 
+        public bool TryGetFieldValue(IdfParser.ObjectContext objectContext, string fieldName, out string value)
+        {
+            if (objectContext == null) throw new ArgumentNullException(nameof(objectContext));
+            if (string.IsNullOrWhiteSpace(fieldName))
+            {
+                value = null;
+                return false;
+            }
+
+            var boundFields = ZipWithFields(objectContext.fields().field());
+            var matchingField = boundFields.FirstOrDefault(field => string.Equals(field.ExpectedField.Name, fieldName, StringComparison.OrdinalIgnoreCase));
+
+            if (matchingField == null)
+            {
+                value = null;
+                return false;
+            }
+
+            value = matchingField.FoundField;
+            return true;
+        }
+
         protected bool Equals(IdfObject other)
         {
             return string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase);
