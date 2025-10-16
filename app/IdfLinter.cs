@@ -157,7 +157,7 @@ namespace dotnet
                 var spaceObject = IdfObjectListV242.GetIdfObject("Space");
                 foreach (var spaceContext in spaceContexts)
                 {
-                    if (spaceContext.TryGetFieldValue(spaceObject, "Zone Name", out var zoneName) &&
+                    if (spaceObject.TryGetFieldValue(spaceContext, "Zone Name", out var zoneName) &&
                         !string.IsNullOrWhiteSpace(zoneName))
                     {
                         zonesWithSpaces.Add(zoneName);

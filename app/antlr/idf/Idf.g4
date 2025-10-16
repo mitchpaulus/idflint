@@ -23,4 +23,3 @@ ALPHA : ~[ \t,;!\r\n] (~[,;!\r\n])* ;
 field : NUMERIC | ALPHA | ;
 
 WS : [ \t\r\n]+ -> skip ;
-
