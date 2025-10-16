@@ -387,7 +387,53 @@ namespace dotnet
     {
         public static void WriteErrors(this List<IdfError> errors)
         {
-            foreach (IdfError error in errors) Console.WriteLine($"{error.Line()}:{error.Character()} {error.Message()}");
+            var groupedErrors = new List<(string Message, List<IdfError> Instances)>();
+            var lookup = new Dictionary<string, List<IdfError>>();
+
+            foreach (IdfError error in errors)
+            {
+                string message = error.Message();
+
+                if (!lookup.TryGetValue(message, out var instances))
+                {
+                    instances = new List<IdfError>();
+                    lookup[message] = instances;
+                    groupedErrors.Add((message, instances));
+                }
+
+                instances.Add(error);
+            }
+
+            foreach (var (message, instances) in groupedErrors)
+            {
+                var orderedInstances = instances
+                    .OrderBy(instance => instance.Line())
+                    .ThenBy(instance => instance.Character())
+                    .ToList();
+
+                var locations = orderedInstances
+                    .Select(instance => $"{instance.Line()}:{instance.Character()}")
+                    .ToList();
+
+                if (!locations.Any()) continue;
+
+                string output;
+
+                if (locations.Count == 1)
+                {
+                    output = $"{locations.First()} {message}";
+                }
+                else
+                {
+                    var displayedLocations = locations.Count > 5
+                        ? $"{string.Join(", ", locations.Take(5))}, and {locations.Count - 5} other{(locations.Count - 5 == 1 ? "" : "s")}" 
+                        : string.Join(", ", locations);
+
+                    output = $"{displayedLocations}. {message}";
+                }
+
+                Console.WriteLine(output);
+            }
         }
     }
 }
