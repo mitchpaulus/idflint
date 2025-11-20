@@ -92,7 +92,7 @@ namespace tests
             string idf = "Timestep,1;";
 
             IdfLinter linter = new IdfLinter(idf);
-            var idfErrors = linter.Lint().Where(error => error is not RequiredObjectTypeNotFoundError).ToList();
+            var idfErrors = linter.Lint().Where(error => error is NumericFieldOutOfRangeError).ToList();
             Assert.IsTrue(!idfErrors.Any());
         }
 
@@ -115,7 +115,7 @@ namespace tests
         {
             string idf = "Timestep,60;";
             IdfLinter linter = new IdfLinter(idf);
-            var idfErrors = linter.Lint().Where(error => error is not RequiredObjectTypeNotFoundError).ToList();
+            var idfErrors = linter.Lint().Where(error => error is NumericFieldOutOfRangeError).ToList();
             Assert.IsTrue(idfErrors.Count == 0);
         }
 
@@ -124,6 +124,58 @@ namespace tests
         {
             string idf = "ZoneControl:Thermostat:OperativeTemperature,Name,Constant,0.9;";
             AssertError(idf, typeof(NumericFieldOutOfRangeError));
+        }
+
+        [Test]
+        public void TestMissingDesignDaysAndRunPeriodsError()
+        {
+            string idf = "Version,25.2;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsTrue(errors.Any(error => error is MissingDesignDaysAndRunPeriodsError));
+        }
+
+        [Test]
+        public void TestNoMissingEnvironmentErrorWithRunPeriod()
+        {
+            string idf = @"Version,25.2;
+RunPeriod,
+  Annual Run,
+  1,1,12,31,
+  Sunday,
+  No,
+  Yes,
+  No,
+  Yes;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is MissingDesignDaysAndRunPeriodsError));
+        }
+
+        [Test]
+        public void TestNoMissingEnvironmentErrorWithDesignDay()
+        {
+            string idf = @"Version,25.2;
+SizingPeriod:DesignDay,
+  Example Winter,
+  1,
+  21,
+  .4,
+  4.5,
+  ,
+  -20,
+  99000,
+  3,
+  330,
+  Wetbulb,
+  1,
+  No,
+  No,
+  No,
+  No;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is MissingDesignDaysAndRunPeriodsError));
         }
 
 

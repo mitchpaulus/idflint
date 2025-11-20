@@ -87,6 +87,24 @@ namespace dotnet
                 }
             }
 
+            string[] designDayObjectNames =
+            {
+                "SizingPeriod:DesignDay",
+                "SizingPeriod:WeatherFileDays",
+                "SizingPeriod:WeatherFileConditionType"
+            };
+
+            bool hasDesignDay = designDayObjectNames.Any(name =>
+                inputData.TryGetValue(name, out var contexts) && contexts != null && contexts.Count > 0);
+
+            bool hasRunPeriod = inputData.TryGetValue("RunPeriod", out var runPeriodContexts) &&
+                                runPeriodContexts != null && runPeriodContexts.Count > 0;
+
+            if (!hasDesignDay && !hasRunPeriod)
+            {
+                errors.Add(new MissingDesignDaysAndRunPeriodsError());
+            }
+
             return errors;
         }
 
