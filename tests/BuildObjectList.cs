@@ -38,7 +38,7 @@ namespace tests
             sb.Append("using System.Collections.Generic;\n");
             sb.Append("namespace dotnet\n");
             sb.Append("{\n");
-            sb.Append("    public static class IdfObjectList\n");
+            sb.Append("    public static class IdfObjectListV242\n");
             sb.Append("    {\n");
             sb.Append("        public static bool ContainsKey(string key) => Objects.ContainsKey(key);\n");
             sb.Append("        private static readonly Dictionary<string, IdfObject> CachedDictionary = new Dictionary<string, IdfObject>(StringComparer.OrdinalIgnoreCase);\n");

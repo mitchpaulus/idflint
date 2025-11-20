@@ -79,6 +79,14 @@ namespace dotnet
                 }
             }
 
+            foreach (var requiredObjectName in IdfRequiredObjects.RequiredObjectNames)
+            {
+                if (!inputData.TryGetValue(requiredObjectName, out var objectInstances) || objectInstances == null || objectInstances.Count == 0)
+                {
+                    errors.Add(new RequiredObjectTypeNotFoundError(requiredObjectName));
+                }
+            }
+
             return errors;
         }
 

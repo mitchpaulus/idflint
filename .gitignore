@@ -4,6 +4,7 @@ dist-newstyle/
 
 .vscode/
 app/zips/
+app/publish-win/
 
 
 # Antlr files. I don't do Java

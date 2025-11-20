@@ -92,7 +92,8 @@ namespace tests
             string idf = "Timestep,1;";
 
             IdfLinter linter = new IdfLinter(idf);
-            Assert.IsTrue(linter.Lint().Count == 0);
+            var idfErrors = linter.Lint().Where(error => error is not RequiredObjectTypeNotFoundError).ToList();
+            Assert.IsTrue(!idfErrors.Any());
         }
 
         [Test]
@@ -114,7 +115,8 @@ namespace tests
         {
             string idf = "Timestep,60;";
             IdfLinter linter = new IdfLinter(idf);
-            Assert.IsTrue(linter.Lint().Count == 0);
+            var idfErrors = linter.Lint().Where(error => error is not RequiredObjectTypeNotFoundError).ToList();
+            Assert.IsTrue(idfErrors.Count == 0);
         }
 
         [Test]
