@@ -6,6 +6,7 @@ dist-newstyle/
 app/zips/
 app/publish-win/
 
+*+.idd
 
 # Antlr files. I don't do Java
 *.tokens
