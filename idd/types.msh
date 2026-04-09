@@ -1,0 +1,8 @@
+# This script prints out all types that can be "referred to".
+`25.2_Energy+.json` parseJson :objects? filter.
+    :fields (:0: :references (len 0 >) map false maybe) map false maybe
+end
+each.
+    obj!
+    $"        \"{@obj :name?}\"," wl
+end
