@@ -1,0 +1,16 @@
+{
+
+    "Pump:ConstantSpeed": [
+        HVAC,Average,Pump Electricity Rate [W]
+        HVAC,Sum,Pump Electricity Energy [J]
+        HVAC,Average,Pump Shaft Power [W]
+        HVAC,Average,Pump Fluid Heat Gain Rate [W]
+        HVAC,Sum,Pump Fluid Heat Gain Energy [J]
+        HVAC,Average,Pump Outlet Temperature [C]
+        HVAC,Average,Pump Mass Flow Rate [kg/s]
+        HVAC,Average,Pump Zone Total Heating Rate [W]
+        HVAC,Sum,Pump Zone Total Heating Energy [J]
+        HVAC,Average,Pump Zone Convective Heating Rate [W]
+        HVAC,Average,Pump Zone Radiative Heating Rate [W]
+    ]
+}

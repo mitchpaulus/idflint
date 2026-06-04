@@ -1,0 +1,23 @@
+sl map.
+    "," split map. trim end fields!
+
+    @fields :0: category!
+    @fields :1: sumAvg!
+    @fields :2: trend!
+    '' unit!
+
+    @trend '[' index idx!
+    @idx dbg isNone not if
+        @trend @idx ? skip unit!
+        @trend @idx ? take trend!
+    end
+
+    {
+        "category": @category,
+        "sumAvg": @sumAvg,
+        "trend": @trend,
+        "unit": @unit
+    }
+end
+toJson
+uw
