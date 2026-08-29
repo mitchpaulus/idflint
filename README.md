@@ -32,3 +32,18 @@ idflint in.idf
 Each error or warning will print as a single line to the standard
 output with the format `{line num}:{column num} {error message}`.
 
+## Object Data
+
+`idflint` lints against the object definitions for the EnergyPlus
+version named in the file's `Version` object. The definitions are
+per-version SQLite files published by
+[idf-default-objects](https://github.com/mitchpaulus/idf-default-objects),
+downloaded on first use (about 5 MB per version) and cached in
+`~/.local/share/idf-lint` on Linux/macOS (respecting `XDG_DATA_HOME`) or
+`%LocalAppData%\idf-lint` on Windows. Set `IDF_LINT_DATA_DIR` to
+override the location. If a file's version has no published data, the
+nearest available version is used and a warning is printed to standard
+error; files with no `Version` object are linted against 24.2.0. For
+offline use, place the `{version}.sqlite3` files in the data directory
+manually.
+

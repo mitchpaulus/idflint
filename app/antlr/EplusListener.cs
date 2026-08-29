@@ -35,15 +35,9 @@ namespace Idf {
 
         public override void EnterObject(IdfParser.ObjectContext context)
         {
+            // Object types are validated later, once the file's Version object has
+            // selected which object database to lint against.
             string typeName = context.ALPHA().GetText();
-
-            if (!IdfObjectListV242.ContainsKey(typeName))
-            {
-                errors.Add(new ObjectTypeNotFoundError(context.ALPHA().Symbol, typeName));
-                // Return early and don't check any of the fields if we don't know what it is.
-                return;
-            }
-
             IdfObjects.AddSafe(typeName, context);
         }
     }

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.8" />
     <!--<Compile Include="antlr/idf/IdfBaseListener.cs" />-->
     <!--<Compile Include="antlr/idf/IdfListener.cs" />-->
     <!--<Compile Include="antlr/idf/IdfParser.cs" />-->

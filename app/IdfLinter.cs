@@ -12,10 +12,35 @@ namespace dotnet
     public class IdfLinter
     {
         private readonly TextReader _reader;
+        private IdfObjectProvider _provider;
 
         public IdfLinter(TextReader reader) => _reader = reader;
 
         public IdfLinter(string idf) => _reader = new StringReader(idf);
+
+        public IdfLinter(string idf, IdfObjectProvider provider)
+        {
+            _reader = new StringReader(idf);
+            _provider = provider;
+        }
+
+        /// <summary>
+        /// Opens the object database matching the file's Version object (downloading
+        /// it on first use). No-op if a provider was already supplied or resolved.
+        /// </summary>
+        private void EnsureProvider(Dictionary<string, List<IdfParser.ObjectContext>> idfObjects)
+        {
+            if (_provider != null) return;
+
+            string versionText = null;
+            if (idfObjects.TryGetValue("Version", out var versionContexts) && versionContexts.Count > 0)
+            {
+                var versionFields = versionContexts[0].fields().field();
+                if (versionFields.Length > 0) versionText = versionFields[0].GetText().Trim();
+            }
+
+            _provider = IdfObjectProvider.ForVersion(versionText);
+        }
 
         public List<IdfError> Lint()
         {
@@ -51,9 +76,21 @@ namespace dotnet
 
             errors.AddRange(idfLintListener.errors);
 
+            EnsureProvider(inputData);
+
+            foreach (var unknownTypeName in inputData.Keys.Where(key => !_provider.ContainsKey(key)).ToList())
+            {
+                foreach (var objectContext in inputData[unknownTypeName])
+                {
+                    errors.Add(new ObjectTypeNotFoundError(objectContext.ALPHA().Symbol, unknownTypeName));
+                }
+                // Don't check any of the fields if we don't know what the object is.
+                inputData.Remove(unknownTypeName);
+            }
+
             foreach (var inputDataKey in inputData.Keys)
             {
-                IdfObject idfObject = IdfObjectListV242.GetIdfObject(inputDataKey);
+                IdfObject idfObject = _provider.GetIdfObject(inputDataKey);
                 foreach (var objectContext in inputData[inputDataKey])
                 {
                     errors.AddRange(idfObject.FieldChecks(objectContext));
@@ -64,7 +101,7 @@ namespace dotnet
 
             errors.AddRange(referenceListResult.Errors);
 
-            foreach (var boundField in inputData.BoundFields().Where(field => field.ExpectedField.ObjectList.Any()))
+            foreach (var boundField in inputData.BoundFields(_provider).Where(field => field.ExpectedField.ObjectList.Any()))
             {
                 // It's not an error if the field is empty and not required.
                 if (string.IsNullOrWhiteSpace(boundField.FoundField) && !boundField.ExpectedField.Required) continue;
@@ -79,7 +116,7 @@ namespace dotnet
                 }
             }
 
-            foreach (var requiredObjectName in IdfRequiredObjects.RequiredObjectNames)
+            foreach (var requiredObjectName in _provider.RequiredObjectNames)
             {
                 if (!inputData.TryGetValue(requiredObjectName, out var objectInstances) || objectInstances == null || objectInstances.Count == 0)
                 {
@@ -114,8 +151,8 @@ namespace dotnet
         }
 
         public bool InReferenceClassList(string objectListType, string foundField) =>
-            IdfReferenceClassListV242.List.ContainsKey(objectListType) &&
-            IdfReferenceClassListV242.List[objectListType].Contains(foundField);
+            _provider.ReferenceClassList.ContainsKey(objectListType) &&
+            _provider.ReferenceClassList[objectListType].Contains(foundField);
 
         /// <summary>
         /// Build up a Dictionary data structure for reference lists.
@@ -129,9 +166,12 @@ namespace dotnet
             Dictionary<string, HashSet<string>> referenceListDictionary = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
             List<IdfError> errors = new List<IdfError>();
 
+            EnsureProvider(data);
+
             foreach (string key in data.Keys)
             {
-                IdfObject idfObject = IdfObjectListV242.GetIdfObject(key);
+                if (!_provider.ContainsKey(key)) continue;
+                IdfObject idfObject = _provider.GetIdfObject(key);
 
                 foreach (var objectContext in data[key])
                 {
@@ -159,11 +199,11 @@ namespace dotnet
             return new ReferenceListResult(referenceListDictionary, errors);
         }
 
-        private static void AddDefaultSpaces(Dictionary<string, List<IdfParser.ObjectContext>> data, Dictionary<string, HashSet<string>> referenceListDictionary)
+        private void AddDefaultSpaces(Dictionary<string, List<IdfParser.ObjectContext>> data, Dictionary<string, HashSet<string>> referenceListDictionary)
         {
             if (!data.TryGetValue("Zone", out var zoneContexts) || zoneContexts.Count == 0) return;
 
-            var zoneObject = IdfObjectListV242.GetIdfObject("Zone");
+            var zoneObject = _provider.GetIdfObject("Zone");
             HashSet<string> zoneNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var zoneContext in zoneContexts)
@@ -180,7 +220,7 @@ namespace dotnet
             HashSet<string> zonesWithSpaces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (data.TryGetValue("Space", out var spaceContexts) && spaceContexts.Count > 0)
             {
-                var spaceObject = IdfObjectListV242.GetIdfObject("Space");
+                var spaceObject = _provider.GetIdfObject("Space");
                 foreach (var spaceContext in spaceContexts)
                 {
                     if (spaceObject.TryGetFieldValue(spaceContext, "Zone Name", out var zoneName) &&

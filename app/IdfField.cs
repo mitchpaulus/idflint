@@ -127,6 +127,10 @@ namespace dotnet
         public int ExtensibleCountSize { get; set; } = 0;
         public List<IdfField> Fields { get; set; } = new List<IdfField>();
 
+        // For extensible objects, the fields of one extension group. Expected fields
+        // past the end of Fields cycle through this group indefinitely.
+        public List<IdfField> ExtensionFields { get; set; } = new List<IdfField>();
+
         // For extensible objects, we aren't go to make new objects for all the possible ones defined,
         // but we do want to check that the user doesn't have to add extra items to the IDD.
         public int TotalNumberOfDefinedFields { get; set; } = 0;
@@ -166,7 +170,26 @@ namespace dotnet
             return $"new IdfObject({string.Join(",", parameters)} )";
         }
 
-        public List<BoundField> ZipWithFields(IEnumerable<IdfParser.FieldContext> fields) => Fields.Zip(fields, (field, s) => new BoundField(field, s)).ToList();
+        public IdfField ExpectedFieldAt(int index)
+        {
+            if (index < Fields.Count) return Fields[index];
+            if (ExtensionFields.Count == 0) return null;
+            return ExtensionFields[(index - Fields.Count) % ExtensionFields.Count];
+        }
+
+        public List<BoundField> ZipWithFields(IEnumerable<IdfParser.FieldContext> fields)
+        {
+            List<BoundField> boundFields = new List<BoundField>();
+            int index = 0;
+            foreach (IdfParser.FieldContext fieldContext in fields)
+            {
+                IdfField expectedField = ExpectedFieldAt(index);
+                if (expectedField == null) break;
+                boundFields.Add(new BoundField(expectedField, fieldContext));
+                index++;
+            }
+            return boundFields;
+        }
 
         public bool TryGetFieldValue(IdfParser.ObjectContext objectContext, string fieldName, out string value)
         {
@@ -225,11 +248,10 @@ namespace dotnet
                 errors.Add( new TooManyFieldsProvidedError(actualIdfObject.Start, Name, TotalNumberOfDefinedFields, fields.Count()));
             }
 
-            List<(IdfParser.FieldContext ActualField, IdfField ExpectedField)> zippedFields = fields
-                .Zip(Fields, (context, field) => (ActualField: context, ExpectedField: field)).ToList();
-
-            foreach ((IdfParser.FieldContext actualField, IdfField expectedField) in zippedFields)
+            foreach (BoundField boundField in ZipWithFields(fields))
             {
+                IdfParser.FieldContext actualField = boundField.FieldContext;
+                IdfField expectedField = boundField.ExpectedField;
                 // Check for matching one of the key values for a field
                 var trimmedFieldValue = actualField.GetText().Trim();
 
