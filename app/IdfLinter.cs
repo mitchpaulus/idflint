@@ -150,6 +150,23 @@ namespace dotnet
             return referenceList.ContainsKey(objectListType) && referenceList[objectListType].Contains(boundField.FoundField);
         }
 
+        // Type pairs EnergyPlus allows to share a name even though both feed the same
+        // combined reference list. A Space named identically to its Zone is explicitly
+        // supported (EnergyPlus itself auto-creates such spaces).
+        private static readonly HashSet<(string, string)> AllowedSharedNameTypePairs = new HashSet<(string, string)>
+        {
+            ("SPACE", "ZONE"),
+        };
+
+        private static bool IsAllowedSharedName(string typeA, string typeB)
+        {
+            typeA = typeA.ToUpperInvariant();
+            typeB = typeB.ToUpperInvariant();
+            if (typeA == typeB) return false;
+            var pair = string.CompareOrdinal(typeA, typeB) <= 0 ? (typeA, typeB) : (typeB, typeA);
+            return AllowedSharedNameTypePairs.Contains(pair);
+        }
+
         public bool InReferenceClassList(string objectListType, string foundField) =>
             _provider.ReferenceClassList.ContainsKey(objectListType) &&
             _provider.ReferenceClassList[objectListType].Contains(foundField);
@@ -164,12 +181,10 @@ namespace dotnet
         public ReferenceListResult GetReferenceLists(Dictionary<string, List<IdfParser.ObjectContext>> data)
         {
             Dictionary<string, HashSet<string>> referenceListDictionary = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
-            // Reference list name -> contributed name -> object type that contributed it.
-            // Names are only duplicates when the same object type contributes one twice;
-            // different types legitimately share names in combined lists (e.g. a Zone and
-            // a Space with the same name both feed ZoneAndZoneListAndSpaceAndSpaceListNames,
-            // which EnergyPlus allows).
-            Dictionary<string, Dictionary<string, string>> contributors = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+            // Reference list name -> contributed name -> object types that contributed it.
+            // A repeated name is a duplicate unless the two contributing types are a pair
+            // EnergyPlus allows to share names (see AllowedSharedNameTypePairs).
+            Dictionary<string, Dictionary<string, HashSet<string>>> contributors = new Dictionary<string, Dictionary<string, HashSet<string>>>(StringComparer.OrdinalIgnoreCase);
             List<IdfError> errors = new List<IdfError>();
 
             EnsureProvider(data);
@@ -197,21 +212,22 @@ namespace dotnet
 
                             if (!contributors.TryGetValue(refList, out var namesToTypes))
                             {
-                                namesToTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                                namesToTypes = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
                                 contributors[refList] = namesToTypes;
                             }
 
-                            if (namesToTypes.TryGetValue(name, out string contributingType))
+                            if (!namesToTypes.TryGetValue(name, out var contributingTypes))
                             {
-                                if (string.Equals(contributingType, key, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    errors.Add(new DuplicateNameInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, refList));
-                                }
+                                contributingTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                namesToTypes[name] = contributingTypes;
                             }
-                            else
+
+                            if (contributingTypes.Any(contributingType => !IsAllowedSharedName(contributingType, key)))
                             {
-                                namesToTypes[name] = key;
+                                errors.Add(new DuplicateNameInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, refList));
                             }
+
+                            contributingTypes.Add(key);
                         }
                     }
                 }

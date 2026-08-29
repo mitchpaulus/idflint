@@ -52,6 +52,16 @@ Space,Zone A,Zone A;";
         }
 
         [Test]
+        public void TestZoneAndZoneListSharingNameIsADuplicate()
+        {
+            // Unlike Zone/Space, EnergyPlus rejects a ZoneList named after a Zone.
+            string idf = @"Version,25.2;
+Zone,Zone A;
+ZoneList,Zone A,Zone A;";
+            AssertError(idf, typeof(DuplicateNameInReferenceListError));
+        }
+
+        [Test]
         public void TestFieldNotInChoiceError()
         {
             string idf = "PerformancePrecisionTradeoffs,BadChoice;";
