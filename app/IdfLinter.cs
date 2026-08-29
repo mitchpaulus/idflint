@@ -164,6 +164,12 @@ namespace dotnet
         public ReferenceListResult GetReferenceLists(Dictionary<string, List<IdfParser.ObjectContext>> data)
         {
             Dictionary<string, HashSet<string>> referenceListDictionary = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            // Reference list name -> contributed name -> object type that contributed it.
+            // Names are only duplicates when the same object type contributes one twice;
+            // different types legitimately share names in combined lists (e.g. a Zone and
+            // a Space with the same name both feed ZoneAndZoneListAndSpaceAndSpaceListNames,
+            // which EnergyPlus allows).
+            Dictionary<string, Dictionary<string, string>> contributors = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
             List<IdfError> errors = new List<IdfError>();
 
             EnsureProvider(data);
@@ -183,11 +189,28 @@ namespace dotnet
                         // Add the field text to the reference list. See \reference in the IDD.
                         foreach (var refList in boundField.ExpectedField.ReferenceList)
                         {
+                            string name = boundField.FoundField.Trim();
+                            if (string.IsNullOrEmpty(name)) continue;
+
                             if (!referenceListDictionary.ContainsKey(refList)) referenceListDictionary[refList] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                            bool addedSuccessfully = referenceListDictionary[refList].Add(boundField.FoundField.Trim());
-                            if (!addedSuccessfully)
+                            referenceListDictionary[refList].Add(name);
+
+                            if (!contributors.TryGetValue(refList, out var namesToTypes))
                             {
-                                errors.Add(new DuplicateNameInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, refList));
+                                namesToTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                                contributors[refList] = namesToTypes;
+                            }
+
+                            if (namesToTypes.TryGetValue(name, out string contributingType))
+                            {
+                                if (string.Equals(contributingType, key, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    errors.Add(new DuplicateNameInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, refList));
+                                }
+                            }
+                            else
+                            {
+                                namesToTypes[name] = key;
                             }
                         }
                     }

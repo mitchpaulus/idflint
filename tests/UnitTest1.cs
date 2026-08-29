@@ -22,8 +22,33 @@ namespace tests
         [Test]
         public void TestMinNumberOfFields()
         {
-            string idf = "ZoneAirMassFlowConservation,No;";
+            string idf = "BuildingSurface:Detailed,South Wall;";
             AssertError(idf, typeof(MinNumberOfFieldsError));
+        }
+
+        [Test]
+        public void TestMinNumberOfFieldsNotReportedWhenOmittedFieldsHaveDefaults()
+        {
+            // ZoneAirMassFlowConservation has \min-fields 3, but every omitted field
+            // has a default, so EnergyPlus accepts this without complaint.
+            string idf = "ZoneAirMassFlowConservation,No;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is MinNumberOfFieldsError));
+        }
+
+        [Test]
+        public void TestZoneAndSpaceSharingNameIsNotADuplicate()
+        {
+            // EnergyPlus allows a Space to share its Zone's name even though both
+            // contribute to combined reference lists like
+            // ZoneAndZoneListAndSpaceAndSpaceListNames.
+            string idf = @"Version,25.2;
+Zone,Zone A;
+Space,Zone A,Zone A;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is DuplicateNameInReferenceListError));
         }
 
         [Test]

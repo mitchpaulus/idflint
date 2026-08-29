@@ -237,10 +237,27 @@ namespace dotnet
 
             var fields = actualIdfObject.fields().field();
 
-            // Check for minimum number of fields
+            // Check for minimum number of fields. EnergyPlus fills omitted trailing fields
+            // with their defaults, so falling short of \min-fields only matters when one
+            // of the omitted fields is required and has no default.
             if (MinNumberOfFields != null && fields.Length < MinNumberOfFields)
             {
-                errors.Add(new MinNumberOfFieldsError(actualIdfObject.Start, Name, MinNumberOfFields.Value, fields.Length));
+                bool missingRequiredField = false;
+                for (int i = fields.Length; i < MinNumberOfFields.Value; i++)
+                {
+                    IdfField omittedField = ExpectedFieldAt(i);
+                    if (omittedField == null) break;
+                    if (omittedField.Required && !omittedField.HasDefault)
+                    {
+                        missingRequiredField = true;
+                        break;
+                    }
+                }
+
+                if (missingRequiredField)
+                {
+                    errors.Add(new MinNumberOfFieldsError(actualIdfObject.Start, Name, MinNumberOfFields.Value, fields.Length));
+                }
             }
 
             if (fields.Length > TotalNumberOfDefinedFields)
