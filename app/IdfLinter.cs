@@ -2,10 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
 using dotnet.checks;
-using Idf;
 
 namespace dotnet
 {
@@ -25,18 +22,39 @@ namespace dotnet
         }
 
         /// <summary>
+        /// Groups object indexes by type name, materializing each distinct type name
+        /// string only once via the span alternate lookup.
+        /// </summary>
+        public static Dictionary<string, List<int>> GroupByType(ParsedIdf parsed)
+        {
+            Dictionary<string, List<int>> byType = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+            var lookup = byType.GetAlternateLookup<ReadOnlySpan<char>>();
+            for (int o = 0; o < parsed.ObjectCount; o++)
+            {
+                ReadOnlySpan<char> type = parsed.TypeSpan(parsed.Object(o));
+                if (!lookup.TryGetValue(type, out List<int> list))
+                {
+                    list = new List<int>();
+                    byType[type.ToString()] = list;
+                }
+                list.Add(o);
+            }
+            return byType;
+        }
+
+        /// <summary>
         /// Opens the object database matching the file's Version object (downloading
         /// it on first use). No-op if a provider was already supplied or resolved.
         /// </summary>
-        private void EnsureProvider(Dictionary<string, List<IdfParser.ObjectContext>> idfObjects)
+        private void EnsureProvider(ParsedIdf parsed, Dictionary<string, List<int>> byType)
         {
             if (_provider != null) return;
 
             string versionText = null;
-            if (idfObjects.TryGetValue("Version", out var versionContexts) && versionContexts.Count > 0)
+            if (byType.TryGetValue("Version", out List<int> versionObjects) && versionObjects.Count > 0)
             {
-                var versionFields = versionContexts[0].fields().field();
-                if (versionFields.Length > 0) versionText = versionFields[0].GetText().Trim();
+                RawObject versionObject = parsed.Object(versionObjects[0]);
+                if (versionObject.FieldCount > 0) versionText = parsed.FieldText(versionObject.FirstField);
             }
 
             _provider = IdfObjectProvider.ForVersion(versionText);
@@ -46,79 +64,43 @@ namespace dotnet
         {
             List<IdfError> errors = new List<IdfError>();
 
-            AntlrInputStream input = new AntlrInputStream(_reader);
+            ParsedIdf parsed = IdfSourceParser.Parse(_reader.ReadToEnd());
 
-            IdfErrorListener idfParseErrorListener = new IdfErrorListener();
+            errors.AddRange(parsed.Errors);
 
-            IdfLexer lexer = new IdfLexer(input);
+            Dictionary<string, List<int>> byType = GroupByType(parsed);
 
-            lexer.RemoveErrorListeners();
-            IdfLexerErrorListener idfLexerErrorListener = new IdfLexerErrorListener();
-            lexer.AddErrorListener(idfLexerErrorListener);
+            EnsureProvider(parsed, byType);
 
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-
-            IdfParser parser = new IdfParser(tokens);
-
-            parser.RemoveErrorListeners();
-            parser.AddErrorListener(idfParseErrorListener);
-
-            IdfParser.IdfContext tree = parser.idf();
-
-            errors.AddRange(idfLexerErrorListener.Errors);
-            errors.AddRange(idfParseErrorListener.Errors);
-
-            ParseTreeWalker walker = new ParseTreeWalker();
-            IdfLintListener idfLintListener = new IdfLintListener();
-            walker.Walk(idfLintListener, tree);
-
-            var inputData = idfLintListener.IdfObjects;
-
-            errors.AddRange(idfLintListener.errors);
-
-            EnsureProvider(inputData);
-
-            foreach (var unknownTypeName in inputData.Keys.Where(key => !_provider.ContainsKey(key)).ToList())
+            foreach (string unknownTypeName in byType.Keys.Where(key => !_provider.ContainsKey(key)).ToList())
             {
-                foreach (var objectContext in inputData[unknownTypeName])
+                foreach (int objectIndex in byType[unknownTypeName])
                 {
-                    errors.Add(new ObjectTypeNotFoundError(objectContext.ALPHA().Symbol, unknownTypeName));
+                    errors.Add(new ObjectTypeNotFoundError(parsed.ObjectPosition(parsed.Object(objectIndex)), unknownTypeName));
                 }
                 // Don't check any of the fields if we don't know what the object is.
-                inputData.Remove(unknownTypeName);
+                byType.Remove(unknownTypeName);
             }
 
-            foreach (var inputDataKey in inputData.Keys)
+            foreach (KeyValuePair<string, List<int>> pair in byType)
             {
-                IdfObject idfObject = _provider.GetIdfObject(inputDataKey);
-                foreach (var objectContext in inputData[inputDataKey])
+                IdfObject idfObject = _provider.GetIdfObject(pair.Key);
+                foreach (int objectIndex in pair.Value)
                 {
-                    errors.AddRange(idfObject.FieldChecks(objectContext));
+                    RawObject obj = parsed.Object(objectIndex);
+                    idfObject.FieldChecks(parsed, obj, errors);
                 }
             }
 
-            ReferenceListResult referenceListResult = GetReferenceLists(idfLintListener.IdfObjects);
+            ReferenceListResult referenceListResult = GetReferenceLists(parsed, byType);
 
             errors.AddRange(referenceListResult.Errors);
 
-            foreach (var boundField in inputData.BoundFields(_provider).Where(field => field.ExpectedField.ObjectList.Any()))
+            CheckObjectListReferences(parsed, byType, referenceListResult.ReferenceList, errors);
+
+            foreach (string requiredObjectName in _provider.RequiredObjectNames)
             {
-                // It's not an error if the field is empty and not required.
-                if (string.IsNullOrWhiteSpace(boundField.FoundField) && !boundField.ExpectedField.Required) continue;
-
-                Dictionary<string, HashSet<string>> referenceList = referenceListResult.ReferenceList;
-
-                var inRegularReferenceList = boundField.ExpectedField.ObjectList.Any(objectListType => InReferenceList(referenceList, objectListType, boundField));
-                var inReferenceClassList = boundField.ExpectedField.ObjectList.Any(objectListType => InReferenceClassList(objectListType, boundField.FoundField));
-                if (!inRegularReferenceList && !inReferenceClassList)
-                {
-                    errors.Add(new FieldNotFoundInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, boundField.ExpectedField.ObjectList));
-                }
-            }
-
-            foreach (var requiredObjectName in _provider.RequiredObjectNames)
-            {
-                if (!inputData.TryGetValue(requiredObjectName, out var objectInstances) || objectInstances == null || objectInstances.Count == 0)
+                if (!byType.TryGetValue(requiredObjectName, out List<int> objectInstances) || objectInstances == null || objectInstances.Count == 0)
                 {
                     errors.Add(new RequiredObjectTypeNotFoundError(requiredObjectName));
                 }
@@ -132,10 +114,10 @@ namespace dotnet
             };
 
             bool hasDesignDay = designDayObjectNames.Any(name =>
-                inputData.TryGetValue(name, out var contexts) && contexts != null && contexts.Count > 0);
+                byType.TryGetValue(name, out List<int> contexts) && contexts != null && contexts.Count > 0);
 
-            bool hasRunPeriod = inputData.TryGetValue("RunPeriod", out var runPeriodContexts) &&
-                                runPeriodContexts != null && runPeriodContexts.Count > 0;
+            bool hasRunPeriod = byType.TryGetValue("RunPeriod", out List<int> runPeriodObjects) &&
+                                runPeriodObjects != null && runPeriodObjects.Count > 0;
 
             if (!hasDesignDay && !hasRunPeriod)
             {
@@ -145,9 +127,54 @@ namespace dotnet
             return errors;
         }
 
-        private bool InReferenceList(Dictionary<string, HashSet<string>> referenceList, string objectListType, BoundField boundField)
+        /// <summary>
+        /// Fields declared with \object-list must name something present in one of the
+        /// referenced lists (or reference class lists).
+        /// </summary>
+        private void CheckObjectListReferences(ParsedIdf parsed, Dictionary<string, List<int>> byType,
+            Dictionary<string, HashSet<string>> referenceList, List<IdfError> errors)
         {
-            return referenceList.ContainsKey(objectListType) && referenceList[objectListType].Contains(boundField.FoundField);
+            foreach (KeyValuePair<string, List<int>> pair in byType)
+            {
+                IdfObject idfObject = _provider.GetIdfObject(pair.Key);
+                foreach (int objectIndex in pair.Value)
+                {
+                    RawObject obj = parsed.Object(objectIndex);
+                    for (int k = 0; k < obj.FieldCount; k++)
+                    {
+                        IdfField expectedField = idfObject.ExpectedFieldAt(k);
+                        if (expectedField == null) break;
+                        if (expectedField.ObjectList.Count == 0) continue;
+
+                        int fieldIndex = obj.FirstField + k;
+                        ReadOnlySpan<char> value = parsed.FieldSpan(fieldIndex);
+
+                        // It's not an error if the field is empty and not required.
+                        if (value.IsEmpty && !expectedField.Required) continue;
+
+                        bool found = false;
+                        foreach (string objectListType in expectedField.ObjectList)
+                        {
+                            if (InReferenceList(referenceList, objectListType, value) || InReferenceClassList(objectListType, value))
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found)
+                        {
+                            errors.Add(new FieldNotFoundInReferenceListError(parsed.FieldPosition(fieldIndex), value.ToString(), expectedField.ObjectList));
+                        }
+                    }
+                }
+            }
+        }
+
+        private static bool InReferenceList(Dictionary<string, HashSet<string>> referenceList, string objectListType, ReadOnlySpan<char> foundField)
+        {
+            return referenceList.TryGetValue(objectListType, out HashSet<string> names) &&
+                   names.GetAlternateLookup<ReadOnlySpan<char>>().Contains(foundField);
         }
 
         // Type pairs EnergyPlus allows to share a name even though both feed the same
@@ -167,18 +194,16 @@ namespace dotnet
             return AllowedSharedNameTypePairs.Contains(pair);
         }
 
-        public bool InReferenceClassList(string objectListType, string foundField) =>
-            _provider.ReferenceClassList.ContainsKey(objectListType) &&
-            _provider.ReferenceClassList[objectListType].Contains(foundField);
+        public bool InReferenceClassList(string objectListType, ReadOnlySpan<char> foundField) =>
+            _provider.ReferenceClassList.TryGetValue(objectListType, out HashSet<string> typeNames) &&
+            typeNames.GetAlternateLookup<ReadOnlySpan<char>>().Contains(foundField);
 
         /// <summary>
         /// Build up a Dictionary data structure for reference lists.
         /// Key: Reference List name from the IDD. Example: 'ScheduleNames'
         /// Value: List of possible names for that reference.
         /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public ReferenceListResult GetReferenceLists(Dictionary<string, List<IdfParser.ObjectContext>> data)
+        public ReferenceListResult GetReferenceLists(ParsedIdf parsed, Dictionary<string, List<int>> byType)
         {
             Dictionary<string, HashSet<string>> referenceListDictionary = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
             // Reference list name -> contributed name -> object types that contributed it.
@@ -187,67 +212,82 @@ namespace dotnet
             Dictionary<string, Dictionary<string, HashSet<string>>> contributors = new Dictionary<string, Dictionary<string, HashSet<string>>>(StringComparer.OrdinalIgnoreCase);
             List<IdfError> errors = new List<IdfError>();
 
-            EnsureProvider(data);
+            EnsureProvider(parsed, byType);
 
-            foreach (string key in data.Keys)
+            foreach (KeyValuePair<string, List<int>> pair in byType)
             {
-                if (!_provider.ContainsKey(key)) continue;
-                IdfObject idfObject = _provider.GetIdfObject(key);
+                if (!_provider.ContainsKey(pair.Key)) continue;
+                IdfObject idfObject = _provider.GetIdfObject(pair.Key);
 
-                foreach (var objectContext in data[key])
+                foreach (int objectIndex in pair.Value)
                 {
-                    var fields = objectContext.fields().field();
-                    var boundFields = idfObject.ZipWithFields(fields);
-
-                    foreach (var boundField in boundFields)
+                    RawObject obj = parsed.Object(objectIndex);
+                    for (int k = 0; k < obj.FieldCount; k++)
                     {
+                        IdfField expectedField = idfObject.ExpectedFieldAt(k);
+                        if (expectedField == null) break;
+                        if (expectedField.ReferenceList.Count == 0) continue;
+
+                        int fieldIndex = obj.FirstField + k;
+                        ReadOnlySpan<char> valueSpan = parsed.FieldSpan(fieldIndex);
+                        if (valueSpan.IsEmpty) continue;
+
+                        // One string per distinct name; every set stores the same instance.
+                        string name = null;
+
                         // Add the field text to the reference list. See \reference in the IDD.
-                        foreach (var refList in boundField.ExpectedField.ReferenceList)
+                        foreach (string refList in expectedField.ReferenceList)
                         {
-                            string name = boundField.FoundField.Trim();
-                            if (string.IsNullOrEmpty(name)) continue;
+                            if (!referenceListDictionary.TryGetValue(refList, out HashSet<string> referenceNames))
+                            {
+                                referenceNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                                referenceListDictionary[refList] = referenceNames;
+                            }
 
-                            if (!referenceListDictionary.ContainsKey(refList)) referenceListDictionary[refList] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                            referenceListDictionary[refList].Add(name);
-
-                            if (!contributors.TryGetValue(refList, out var namesToTypes))
+                            if (!contributors.TryGetValue(refList, out Dictionary<string, HashSet<string>> namesToTypes))
                             {
                                 namesToTypes = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
                                 contributors[refList] = namesToTypes;
                             }
 
-                            if (!namesToTypes.TryGetValue(name, out var contributingTypes))
+                            if (namesToTypes.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(valueSpan, out HashSet<string> contributingTypes))
                             {
+                                if (contributingTypes.Any(contributingType => !IsAllowedSharedName(contributingType, pair.Key)))
+                                {
+                                    errors.Add(new DuplicateNameInReferenceListError(parsed.FieldPosition(fieldIndex), valueSpan.ToString(), refList));
+                                }
+                            }
+                            else
+                            {
+                                name ??= valueSpan.ToString();
                                 contributingTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                                 namesToTypes[name] = contributingTypes;
                             }
 
-                            if (contributingTypes.Any(contributingType => !IsAllowedSharedName(contributingType, key)))
-                            {
-                                errors.Add(new DuplicateNameInReferenceListError(boundField.FieldContext.Start, boundField.FoundField, refList));
-                            }
-
-                            contributingTypes.Add(key);
+                            name ??= valueSpan.ToString();
+                            referenceNames.Add(name);
+                            contributingTypes.Add(pair.Key);
                         }
                     }
                 }
             }
 
-            AddDefaultSpaces(data, referenceListDictionary);
+            AddDefaultSpaces(parsed, byType, referenceListDictionary);
 
             return new ReferenceListResult(referenceListDictionary, errors);
         }
 
-        private void AddDefaultSpaces(Dictionary<string, List<IdfParser.ObjectContext>> data, Dictionary<string, HashSet<string>> referenceListDictionary)
+        private void AddDefaultSpaces(ParsedIdf parsed, Dictionary<string, List<int>> byType, Dictionary<string, HashSet<string>> referenceListDictionary)
         {
-            if (!data.TryGetValue("Zone", out var zoneContexts) || zoneContexts.Count == 0) return;
+            if (!byType.TryGetValue("Zone", out List<int> zoneIndexes) || zoneIndexes.Count == 0) return;
 
-            var zoneObject = _provider.GetIdfObject("Zone");
+            IdfObject zoneObject = _provider.GetIdfObject("Zone");
             HashSet<string> zoneNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var zoneContext in zoneContexts)
+            foreach (int zoneIndex in zoneIndexes)
             {
-                if (zoneObject.TryGetFieldValue(zoneContext, "Name", out var zoneName) &&
+                RawObject zone = parsed.Object(zoneIndex);
+                if (zoneObject.TryGetFieldValue(parsed, zone, "Name", out string zoneName) &&
                     !string.IsNullOrWhiteSpace(zoneName))
                 {
                     zoneNames.Add(zoneName);
@@ -257,12 +297,13 @@ namespace dotnet
             if (zoneNames.Count == 0) return;
 
             HashSet<string> zonesWithSpaces = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (data.TryGetValue("Space", out var spaceContexts) && spaceContexts.Count > 0)
+            if (byType.TryGetValue("Space", out List<int> spaceIndexes) && spaceIndexes.Count > 0)
             {
-                var spaceObject = _provider.GetIdfObject("Space");
-                foreach (var spaceContext in spaceContexts)
+                IdfObject spaceObject = _provider.GetIdfObject("Space");
+                foreach (int spaceIndex in spaceIndexes)
                 {
-                    if (spaceObject.TryGetFieldValue(spaceContext, "Zone Name", out var zoneName) &&
+                    RawObject space = parsed.Object(spaceIndex);
+                    if (spaceObject.TryGetFieldValue(parsed, space, "Zone Name", out string zoneName) &&
                         !string.IsNullOrWhiteSpace(zoneName))
                     {
                         zonesWithSpaces.Add(zoneName);
@@ -270,13 +311,13 @@ namespace dotnet
                 }
             }
 
-            if (!referenceListDictionary.TryGetValue("SpaceNames", out var spaceNames))
+            if (!referenceListDictionary.TryGetValue("SpaceNames", out HashSet<string> spaceNames))
             {
                 spaceNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 referenceListDictionary["SpaceNames"] = spaceNames;
             }
 
-            foreach (var zoneName in zoneNames)
+            foreach (string zoneName in zoneNames)
             {
                 if (!zonesWithSpaces.Contains(zoneName))
                 {

@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
 using dotnet;
 using dotnet.checks;
-using Idf;
 using NUnit.Framework;
 
 namespace tests
@@ -219,16 +216,11 @@ SizingPeriod:DesignDay,
         {
             string idf = "Schedule:Constant,  Test Schedule  ,,5;";
 
-            IdfParser.IdfContext tree = idf.ParseIdf();
-
-            ParseTreeWalker walker = new ParseTreeWalker();
-
-            IdfLintListener idfLintListener = new IdfLintListener();
-            walker.Walk(idfLintListener, tree);
+            ParsedIdf parsed = idf.ParseIdf();
 
             IdfLinter linter = new IdfLinter(idf);
 
-            var result = linter.GetReferenceLists(idfLintListener.IdfObjects);
+            var result = linter.GetReferenceLists(parsed, IdfLinter.GroupByType(parsed));
 
             Assert.IsTrue(result.ReferenceList.Count() == 1);
 

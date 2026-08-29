@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using dotnet.checks;
@@ -177,40 +178,27 @@ namespace dotnet
             return ExtensionFields[(index - Fields.Count) % ExtensionFields.Count];
         }
 
-        public List<BoundField> ZipWithFields(IEnumerable<IdfParser.FieldContext> fields)
+        public bool TryGetFieldValue(ParsedIdf idf, in RawObject obj, string fieldName, out string value)
         {
-            List<BoundField> boundFields = new List<BoundField>();
-            int index = 0;
-            foreach (IdfParser.FieldContext fieldContext in fields)
-            {
-                IdfField expectedField = ExpectedFieldAt(index);
-                if (expectedField == null) break;
-                boundFields.Add(new BoundField(expectedField, fieldContext));
-                index++;
-            }
-            return boundFields;
-        }
-
-        public bool TryGetFieldValue(IdfParser.ObjectContext objectContext, string fieldName, out string value)
-        {
-            if (objectContext == null) throw new ArgumentNullException(nameof(objectContext));
             if (string.IsNullOrWhiteSpace(fieldName))
             {
                 value = null;
                 return false;
             }
 
-            var boundFields = ZipWithFields(objectContext.fields().field());
-            var matchingField = boundFields.FirstOrDefault(field => string.Equals(field.ExpectedField.Name, fieldName, StringComparison.OrdinalIgnoreCase));
-
-            if (matchingField == null)
+            for (int k = 0; k < obj.FieldCount; k++)
             {
-                value = null;
-                return false;
+                IdfField expectedField = ExpectedFieldAt(k);
+                if (expectedField == null) break;
+                if (string.Equals(expectedField.Name, fieldName, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = idf.FieldText(obj.FirstField + k);
+                    return true;
+                }
             }
 
-            value = matchingField.FoundField;
-            return true;
+            value = null;
+            return false;
         }
 
         protected bool Equals(IdfObject other)
@@ -231,19 +219,17 @@ namespace dotnet
             return (Name != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(Name) : 0);
         }
 
-        public List<IdfError> FieldChecks(IdfParser.ObjectContext actualIdfObject)
+        public void FieldChecks(ParsedIdf idf, in RawObject obj, List<IdfError> errors)
         {
-            List<IdfError> errors = new List<IdfError>();
-
-            var fields = actualIdfObject.fields().field();
+            int fieldCount = obj.FieldCount;
 
             // Check for minimum number of fields. EnergyPlus fills omitted trailing fields
             // with their defaults, so falling short of \min-fields only matters when one
             // of the omitted fields is required and has no default.
-            if (MinNumberOfFields != null && fields.Length < MinNumberOfFields)
+            if (MinNumberOfFields != null && fieldCount < MinNumberOfFields)
             {
                 bool missingRequiredField = false;
-                for (int i = fields.Length; i < MinNumberOfFields.Value; i++)
+                for (int i = fieldCount; i < MinNumberOfFields.Value; i++)
                 {
                     IdfField omittedField = ExpectedFieldAt(i);
                     if (omittedField == null) break;
@@ -256,56 +242,59 @@ namespace dotnet
 
                 if (missingRequiredField)
                 {
-                    errors.Add(new MinNumberOfFieldsError(actualIdfObject.Start, Name, MinNumberOfFields.Value, fields.Length));
+                    errors.Add(new MinNumberOfFieldsError(idf.ObjectPosition(obj), Name, MinNumberOfFields.Value, fieldCount));
                 }
             }
 
-            if (fields.Length > TotalNumberOfDefinedFields)
+            if (fieldCount > TotalNumberOfDefinedFields)
             {
-                errors.Add( new TooManyFieldsProvidedError(actualIdfObject.Start, Name, TotalNumberOfDefinedFields, fields.Count()));
+                errors.Add(new TooManyFieldsProvidedError(idf.ObjectPosition(obj), Name, TotalNumberOfDefinedFields, fieldCount));
             }
 
-            foreach (BoundField boundField in ZipWithFields(fields))
+            for (int k = 0; k < fieldCount; k++)
             {
-                IdfParser.FieldContext actualField = boundField.FieldContext;
-                IdfField expectedField = boundField.ExpectedField;
-                // Check for matching one of the key values for a field
-                var trimmedFieldValue = actualField.GetText().Trim();
+                IdfField expectedField = ExpectedFieldAt(k);
+                if (expectedField == null) break;
 
-                if (expectedField.Keys.Any())
+                int fieldIndex = obj.FirstField + k;
+                ReadOnlySpan<char> value = idf.FieldSpan(fieldIndex);
+                bool blankOk = value.IsEmpty && (expectedField.HasDefault || !expectedField.Required);
+
+                // Check for matching one of the key values for a field
+                if (expectedField.Keys.Count > 0)
                 {
-                    if (!expectedField.Keys.Contains(trimmedFieldValue) && !(string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required)))
+                    if (!expectedField.Keys.GetAlternateLookup<ReadOnlySpan<char>>().Contains(value) && !blankOk)
                     {
-                        errors.Add(new FieldNotInChoiceError(actualField.Start, expectedField.Name, expectedField.Keys, trimmedFieldValue));
+                        errors.Add(new FieldNotInChoiceError(idf.FieldPosition(fieldIndex), expectedField.Name, expectedField.Keys, value.ToString()));
                     }
                 }
 
                 if (expectedField.AlphaNumeric == IdfFieldAlphaNumeric.Numeric)
                 {
-                    bool properlyAutocalculatable = (string.Equals(trimmedFieldValue, "autocalculate", StringComparison.OrdinalIgnoreCase) && expectedField.AutoCalculatable);
-                    bool properlyAutosizeable =
-                        (string.Equals(trimmedFieldValue, "autosize", StringComparison.OrdinalIgnoreCase) &&
-                         expectedField.AutoSizeable);
-                    bool parsesAsDouble = double.TryParse(trimmedFieldValue, out double value);
-                    var isBlankAndNotRequired = (string.IsNullOrWhiteSpace(trimmedFieldValue) && (expectedField.HasDefault || !expectedField.Required));
+                    bool parsesAsDouble = double.TryParse(value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out double parsed);
 
-                    bool success = parsesAsDouble || properlyAutocalculatable || isBlankAndNotRequired || properlyAutosizeable;
-                    if (!success) errors.Add(new NumericFieldNotNumericError(actualField.Start, expectedField.Name, trimmedFieldValue));
-                    else if (parsesAsDouble)
+                    if (parsesAsDouble)
                     {
-                        if (expectedField.MinType == IdfFieldMinMaxType.Inclusive && value < expectedField.Minimum)
-                            errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Minimum, expectedField.MinType, actualField.GetText(), expectedField.Minimum, expectedField.Name));
-                        else if (expectedField.MinType == IdfFieldMinMaxType.Exclusive && value <= expectedField.Minimum)
-                            errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Minimum, expectedField.MinType, actualField.GetText(), expectedField.Minimum, expectedField.Name));
-                        else if (expectedField.MaxType == IdfFieldMinMaxType.Inclusive && value > expectedField.Maximum)
-                            errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Maximum, expectedField.MaxType, actualField.GetText(), expectedField.Maximum, expectedField.Name));
-                        else if (expectedField.MaxType == IdfFieldMinMaxType.Exclusive && value >= expectedField.Maximum)
-                            errors.Add(new NumericFieldOutOfRangeError(actualField.Start,  MinMax.Maximum, expectedField.MaxType, actualField.GetText(), expectedField.Maximum, expectedField.Name));
+                        if (expectedField.MinType == IdfFieldMinMaxType.Inclusive && parsed < expectedField.Minimum)
+                            errors.Add(new NumericFieldOutOfRangeError(idf.FieldPosition(fieldIndex), MinMax.Minimum, expectedField.MinType, value.ToString(), expectedField.Minimum, expectedField.Name));
+                        else if (expectedField.MinType == IdfFieldMinMaxType.Exclusive && parsed <= expectedField.Minimum)
+                            errors.Add(new NumericFieldOutOfRangeError(idf.FieldPosition(fieldIndex), MinMax.Minimum, expectedField.MinType, value.ToString(), expectedField.Minimum, expectedField.Name));
+                        else if (expectedField.MaxType == IdfFieldMinMaxType.Inclusive && parsed > expectedField.Maximum)
+                            errors.Add(new NumericFieldOutOfRangeError(idf.FieldPosition(fieldIndex), MinMax.Maximum, expectedField.MaxType, value.ToString(), expectedField.Maximum, expectedField.Name));
+                        else if (expectedField.MaxType == IdfFieldMinMaxType.Exclusive && parsed >= expectedField.Maximum)
+                            errors.Add(new NumericFieldOutOfRangeError(idf.FieldPosition(fieldIndex), MinMax.Maximum, expectedField.MaxType, value.ToString(), expectedField.Maximum, expectedField.Name));
+                    }
+                    else
+                    {
+                        bool properlyAutocalculatable = expectedField.AutoCalculatable && value.Equals("autocalculate", StringComparison.OrdinalIgnoreCase);
+                        bool properlyAutosizeable = expectedField.AutoSizeable && value.Equals("autosize", StringComparison.OrdinalIgnoreCase);
+                        if (!properlyAutocalculatable && !properlyAutosizeable && !blankOk)
+                        {
+                            errors.Add(new NumericFieldNotNumericError(idf.FieldPosition(fieldIndex), expectedField.Name, value.ToString()));
+                        }
                     }
                 }
             }
-
-            return errors;
         }
 
         public string PrintDefaultObject()
@@ -329,26 +318,6 @@ namespace dotnet
         }
     }
 
-    public class BoundField
-    {
-        public IdfField ExpectedField;
-        public IdfParser.FieldContext FieldContext;
-        public string FoundField => FieldContext.GetText().Trim();
-
-        public BoundField(IdfField expectedField, IdfParser.FieldContext fieldContext)
-        {
-            ExpectedField = expectedField;
-            FieldContext = fieldContext;
-        }
-    }
-
-    public class BoundObject
-    {
-        public IdfObject ExpectedObject;
-        public IdfParser.ObjectContext FoundObject;
-
-
-    }
 
     public class IdfUnit
     {
