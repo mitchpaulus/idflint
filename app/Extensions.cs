@@ -36,18 +36,18 @@ namespace dotnet
             objectDictionary.Keys.SelectMany(key => objectDictionary[key]).ToList();
 
         public static List<(IdfParser.ObjectContext objectContext, IdfObject idfObject)> BoundObjects(
-            this Dictionary<string, List<IdfParser.ObjectContext>> data)
+            this Dictionary<string, List<IdfParser.ObjectContext>> data, IdfObjectProvider provider)
         {
             return data.SelectMany(pair =>
             {
-                IdfObject idfObject = IdfObjectListV242.GetIdfObject(pair.Key);
+                IdfObject idfObject = provider.GetIdfObject(pair.Key);
                 return pair.Value.Select(context => (context, idfObject));
             }).ToList();
         }
 
-        public static List<BoundField> BoundFields(this Dictionary<string, List<IdfParser.ObjectContext>> data)
+        public static List<BoundField> BoundFields(this Dictionary<string, List<IdfParser.ObjectContext>> data, IdfObjectProvider provider)
         {
-            return data.BoundObjects().SelectMany(tuple => tuple.idfObject.ZipWithFields(tuple.objectContext.fields().field())).ToList();
+            return data.BoundObjects(provider).SelectMany(tuple => tuple.idfObject.ZipWithFields(tuple.objectContext.fields().field())).ToList();
         }
 
         public static string JoinStrings(this IEnumerable<string> strings) => string.Join(",", strings.Select(s => $"\"{s}\""));

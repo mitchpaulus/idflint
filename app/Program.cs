@@ -19,7 +19,16 @@ namespace dotnet
             TextReader reader = args.Any() ? new StreamReader(args[0]) : Console.In;
 
             IdfLinter linter = new IdfLinter(reader);
-            var errors = linter.Lint();
+            List<IdfError> errors;
+            try
+            {
+                errors = linter.Lint();
+            }
+            catch (IdfDataStoreException e)
+            {
+                Console.Error.WriteLine($"idflint: {e.Message}");
+                return 2;
+            }
             errors.WriteErrors();
 
             return errors.Any() ? 1 : 0;
