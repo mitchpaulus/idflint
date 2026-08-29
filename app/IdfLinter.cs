@@ -124,6 +124,12 @@ namespace dotnet
                 errors.Add(new MissingDesignDaysAndRunPeriodsError());
             }
 
+            if (!byType.TryGetValue("Timestep", out List<int> timestepObjects) ||
+                timestepObjects == null || timestepObjects.Count == 0)
+            {
+                errors.Add(new MissingTimestepError());
+            }
+
             return errors;
         }
 
