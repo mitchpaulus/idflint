@@ -230,6 +230,52 @@ SizingPeriod:DesignDay,
         }
 
         [Test]
+        public void TestZoneWithEquipmentButNoThermostat()
+        {
+            string idf = @"Version,25.2;
+Zone,Zone A;
+ZoneHVAC:EquipmentConnections,Zone A,Zone A Equipment,Zone A Inlets,,Zone A Air Node,Zone A Return;";
+            AssertError(idf, typeof(ZoneMissingThermostatError));
+        }
+
+        [Test]
+        public void TestZoneWithEquipmentAndThermostatNoError()
+        {
+            string idf = @"Version,25.2;
+Zone,Zone A;
+ZoneHVAC:EquipmentConnections,Zone A,Zone A Equipment,Zone A Inlets,,Zone A Air Node,Zone A Return;
+ZoneControl:Thermostat,Zone A Thermostat,Zone A,Control Type Schedule,ThermostatSetpoint:DualSetpoint,Setpoints;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is ZoneMissingThermostatError));
+        }
+
+        [Test]
+        public void TestZoneWithThermostatThroughZoneListNoError()
+        {
+            string idf = @"Version,25.2;
+Zone,Zone A;
+ZoneList,All Zones,Zone A;
+ZoneHVAC:EquipmentConnections,Zone A,Zone A Equipment,Zone A Inlets,,Zone A Air Node,Zone A Return;
+ZoneControl:Thermostat,All Zones Thermostat,All Zones,Control Type Schedule,ThermostatSetpoint:DualSetpoint,Setpoints;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is ZoneMissingThermostatError));
+        }
+
+        [Test]
+        public void TestUnconditionedZoneWithoutThermostatNoError()
+        {
+            // A zone with no ZoneHVAC:EquipmentConnections (a plenum or
+            // unconditioned zone) does not need a thermostat.
+            string idf = @"Version,25.2;
+Zone,Plenum;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is ZoneMissingThermostatError));
+        }
+
+        [Test]
         public void TestBuildingReferenceList()
         {
             string idf = "Schedule:Constant,  Test Schedule  ,,5;";

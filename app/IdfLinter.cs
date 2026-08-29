@@ -130,7 +130,81 @@ namespace dotnet
                 errors.Add(new MissingTimestepError());
             }
 
+            CheckZonesHaveThermostats(parsed, byType, errors);
+
             return errors;
+        }
+
+        // Object types that associate a thermostat with a zone through their
+        // "Zone or ZoneList Name" field.
+        private static readonly string[] ThermostatObjectTypes =
+        {
+            "ZoneControl:Thermostat",
+            "ZoneControl:Thermostat:StagedDualSetpoint",
+        };
+
+        /// <summary>
+        /// A zone with a ZoneHVAC:EquipmentConnections object is conditioned, so it
+        /// needs a thermostat; EnergyPlus fails during simulation otherwise. Zones
+        /// without equipment connections (plenums, unconditioned zones) are fine
+        /// without one and are not flagged.
+        /// </summary>
+        private void CheckZonesHaveThermostats(ParsedIdf parsed, Dictionary<string, List<int>> byType, List<IdfError> errors)
+        {
+            if (!byType.TryGetValue("ZoneHVAC:EquipmentConnections", out List<int> connectionIndexes)) return;
+
+            // ZoneList name -> member zone names, for expanding thermostat assignments.
+            Dictionary<string, List<string>> zoneLists = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            if (byType.TryGetValue("ZoneList", out List<int> zoneListIndexes))
+            {
+                foreach (int zoneListIndex in zoneListIndexes)
+                {
+                    RawObject zoneList = parsed.Object(zoneListIndex);
+                    if (zoneList.FieldCount == 0) continue;
+                    List<string> members = new List<string>();
+                    // Field 0 is the list name; every following field is a member zone name.
+                    for (int k = 1; k < zoneList.FieldCount; k++)
+                    {
+                        string member = parsed.FieldText(zoneList.FirstField + k);
+                        if (!string.IsNullOrWhiteSpace(member)) members.Add(member);
+                    }
+                    zoneLists[parsed.FieldText(zoneList.FirstField)] = members;
+                }
+            }
+
+            HashSet<string> zonesWithThermostats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string thermostatType in ThermostatObjectTypes)
+            {
+                if (!byType.TryGetValue(thermostatType, out List<int> thermostatIndexes)) continue;
+                IdfObject thermostatObject = _provider.GetIdfObject(thermostatType);
+                foreach (int thermostatIndex in thermostatIndexes)
+                {
+                    RawObject thermostat = parsed.Object(thermostatIndex);
+                    if (!thermostatObject.TryGetFieldValue(parsed, thermostat, "Zone or ZoneList Name", out string zoneOrZoneList) ||
+                        string.IsNullOrWhiteSpace(zoneOrZoneList))
+                    {
+                        continue;
+                    }
+
+                    zonesWithThermostats.Add(zoneOrZoneList);
+                    if (zoneLists.TryGetValue(zoneOrZoneList, out List<string> members))
+                    {
+                        foreach (string member in members) zonesWithThermostats.Add(member);
+                    }
+                }
+            }
+
+            IdfObject connectionsObject = _provider.GetIdfObject("ZoneHVAC:EquipmentConnections");
+            foreach (int connectionIndex in connectionIndexes)
+            {
+                RawObject connections = parsed.Object(connectionIndex);
+                if (connectionsObject.TryGetFieldValue(parsed, connections, "Zone Name", out string zoneName) &&
+                    !string.IsNullOrWhiteSpace(zoneName) &&
+                    !zonesWithThermostats.Contains(zoneName))
+                {
+                    errors.Add(new ZoneMissingThermostatError(parsed.ObjectPosition(connections), zoneName));
+                }
+            }
         }
 
         /// <summary>
