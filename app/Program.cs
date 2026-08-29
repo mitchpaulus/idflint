@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Antlr4.Runtime;
 
 namespace dotnet
 {
@@ -35,14 +34,4 @@ namespace dotnet
         }
     }
 
-    public class IdfLexerErrorListener : IAntlrErrorListener<int>
-    {
-        public readonly List<IdfParseError> Errors = new List<IdfParseError>();
-
-        public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine,
-            string msg, RecognitionException e)
-        {
-            Errors.Add(new IdfParseError(line, charPositionInLine, msg));
-        }
-    }
 }

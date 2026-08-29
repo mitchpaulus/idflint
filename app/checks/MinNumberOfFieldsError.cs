@@ -1,4 +1,3 @@
-using Antlr4.Runtime;
 
 namespace dotnet.checks
 {
@@ -15,13 +14,13 @@ namespace dotnet.checks
         public int Character() => _col;
         public string Message() => $"The object '{_objectName}' requires {_numberOfFieldsExpected} fields, {_numberOfFieldsFound} were supplied.";
 
-        public MinNumberOfFieldsError(IToken startToken, string objectName, int numberOfFieldsExpected, int numberOfFieldsFound)
+        public MinNumberOfFieldsError(SourcePosition position, string objectName, int numberOfFieldsExpected, int numberOfFieldsFound)
         {
             _objectName = objectName;
             _numberOfFieldsExpected = numberOfFieldsExpected;
             _numberOfFieldsFound = numberOfFieldsFound;
-            _line = startToken.Line;
-            _col = startToken.Column;
+            _line = position.Line;
+            _col = position.Column;
         }
     }
 }

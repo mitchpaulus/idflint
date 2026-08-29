@@ -1,21 +1,20 @@
-using Antlr4.Runtime;
 
 namespace dotnet.checks
 {
     public class ObjectTypeNotFoundError : IdfError
     {
-        private readonly IToken _token;
+        private readonly SourcePosition _position;
         private readonly string _enteredObjectType;
         public int Id() => 3;
 
-        public int Line() => _token.Line;
+        public int Line() => _position.Line;
 
-        public int Character() => _token.Column;
+        public int Character() => _position.Column;
         public string Message() => $"{_enteredObjectType} is not a known object type.";
 
-        public ObjectTypeNotFoundError(IToken token, string enteredObjectType)
+        public ObjectTypeNotFoundError(SourcePosition position, string enteredObjectType)
         {
-            _token = token;
+            _position = position;
             _enteredObjectType = enteredObjectType;
         }
     }
