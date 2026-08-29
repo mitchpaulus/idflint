@@ -130,7 +130,103 @@ namespace dotnet
                 errors.Add(new MissingTimestepError());
             }
 
+            CheckOperationSchemeLoopTypes(parsed, byType, errors);
+
             return errors;
+        }
+
+        /// <summary>
+        /// A loop declared as Cooling/Condenser in its Sizing:Plant object should not
+        /// be controlled by PlantEquipmentOperation:HeatingLoad schemes, and a
+        /// Heating/Steam loop should not use PlantEquipmentOperation:CoolingLoad.
+        /// Loops without a Sizing:Plant object are skipped since their intent is unknown.
+        /// </summary>
+        private void CheckOperationSchemeLoopTypes(ParsedIdf parsed, Dictionary<string, List<int>> byType, List<IdfError> errors)
+        {
+            if (!byType.TryGetValue("Sizing:Plant", out List<int> sizingIndexes)) return;
+
+            // Loop name -> declared Loop Type (Heating, Cooling, Condenser, Steam).
+            Dictionary<string, string> loopTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            IdfObject sizingObject = _provider.GetIdfObject("Sizing:Plant");
+            foreach (int sizingIndex in sizingIndexes)
+            {
+                RawObject sizing = parsed.Object(sizingIndex);
+                if (sizingObject.TryGetFieldValue(parsed, sizing, "Plant or Condenser Loop Name", out string loopName) &&
+                    sizingObject.TryGetFieldValue(parsed, sizing, "Loop Type", out string loopType) &&
+                    !string.IsNullOrWhiteSpace(loopName) && !string.IsNullOrWhiteSpace(loopType))
+                {
+                    loopTypes[loopName] = loopType;
+                }
+            }
+
+            if (loopTypes.Count == 0) return;
+
+            var loopKinds = new (string LoopObjectType, string SchemesObjectType, string SchemesFieldName)[]
+            {
+                ("PlantLoop", "PlantEquipmentOperationSchemes", "Plant Equipment Operation Scheme Name"),
+                ("CondenserLoop", "CondenserEquipmentOperationSchemes", "Condenser Equipment Operation Scheme Name"),
+            };
+
+            foreach ((string loopObjectType, string schemesObjectType, string schemesFieldName) in loopKinds)
+            {
+                if (!byType.TryGetValue(loopObjectType, out List<int> loopIndexes)) continue;
+
+                // Operation schemes list name -> its object index.
+                Dictionary<string, int> schemesByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                if (byType.TryGetValue(schemesObjectType, out List<int> schemesIndexes))
+                {
+                    foreach (int schemesIndex in schemesIndexes)
+                    {
+                        RawObject schemes = parsed.Object(schemesIndex);
+                        if (schemes.FieldCount > 0) schemesByName[parsed.FieldText(schemes.FirstField)] = schemesIndex;
+                    }
+                }
+
+                if (schemesByName.Count == 0) continue;
+
+                IdfObject loopObject = _provider.GetIdfObject(loopObjectType);
+                IdfObject schemesObject = _provider.GetIdfObject(schemesObjectType);
+
+                foreach (int loopIndex in loopIndexes)
+                {
+                    RawObject loop = parsed.Object(loopIndex);
+                    if (!loopObject.TryGetFieldValue(parsed, loop, "Name", out string loopName) ||
+                        !loopTypes.TryGetValue(loopName, out string loopType))
+                    {
+                        continue;
+                    }
+
+                    bool coolingLoop = loopType.Equals("Cooling", StringComparison.OrdinalIgnoreCase) ||
+                                       loopType.Equals("Condenser", StringComparison.OrdinalIgnoreCase);
+                    bool heatingLoop = loopType.Equals("Heating", StringComparison.OrdinalIgnoreCase) ||
+                                       loopType.Equals("Steam", StringComparison.OrdinalIgnoreCase);
+
+                    string mismatchedSchemeType;
+                    if (coolingLoop) mismatchedSchemeType = "PlantEquipmentOperation:HeatingLoad";
+                    else if (heatingLoop) mismatchedSchemeType = "PlantEquipmentOperation:CoolingLoad";
+                    else continue;
+
+                    if (!loopObject.TryGetFieldValue(parsed, loop, schemesFieldName, out string schemesName) ||
+                        !schemesByName.TryGetValue(schemesName, out int schemesObjectIndex))
+                    {
+                        continue;
+                    }
+
+                    RawObject schemes = parsed.Object(schemesObjectIndex);
+                    for (int k = 0; k < schemes.FieldCount; k++)
+                    {
+                        IdfField expectedField = schemesObject.ExpectedFieldAt(k);
+                        if (expectedField == null) break;
+                        if (!expectedField.Name.EndsWith("Object Type", StringComparison.OrdinalIgnoreCase)) continue;
+
+                        int fieldIndex = schemes.FirstField + k;
+                        if (parsed.FieldSpan(fieldIndex).Equals(mismatchedSchemeType, StringComparison.OrdinalIgnoreCase))
+                        {
+                            errors.Add(new OperationSchemeLoopTypeMismatchError(parsed.FieldPosition(fieldIndex), loopName, loopType, mismatchedSchemeType));
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
