@@ -212,6 +212,24 @@ SizingPeriod:DesignDay,
 
 
         [Test]
+        public void TestMissingTimestepError()
+        {
+            string idf = "Version,25.2;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsTrue(errors.Any(error => error is MissingTimestepError));
+        }
+
+        [Test]
+        public void TestNoMissingTimestepErrorWhenTimestepPresent()
+        {
+            string idf = "Version,25.2;\nTimestep,4;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is MissingTimestepError));
+        }
+
+        [Test]
         public void TestBuildingReferenceList()
         {
             string idf = "Schedule:Constant,  Test Schedule  ,,5;";
