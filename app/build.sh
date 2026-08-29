@@ -1,12 +1,21 @@
 #!/bin/sh
-dotnet publish -r win-x64   -c Release --self-contained
-dotnet publish -r linux-x64 -c Release --self-contained
-dotnet publish -r osx-x64   -c Release --self-contained
+# Publishes idflint as a Native AOT binary for the local platform.
+# Cross-OS AOT publishing is not supported: run this script on Linux for
+# linux-x64, on Windows for win-x64, on macOS for osx-x64/osx-arm64.
+# CppCompilerAndLinker=cc uses the system C compiler (gcc or clang).
+set -e
 
-rm -f zips/win-x64.zip
-rm -f zips/linux-x64.zip
-rm -f zips/osx-x64.zip
+RID=${1:-linux-x64}
+VERSION=$2
 
-zip -j zips/win-x64_v"$1".zip bin/Release/netcoreapp3.1/win-x64/publish/*
-zip -j zips/linux-x64_v"$1".zip bin/Release/netcoreapp3.1/linux-x64/publish/*
-zip -j zips/osx-x64_v"$1".zip bin/Release/netcoreapp3.1/osx-x64/publish/*
+dotnet publish -c Release -r "$RID" \
+    -p:PublishAot=true \
+    -p:CppCompilerAndLinker=cc \
+    -o "publish/$RID"
+
+if [ -n "$VERSION" ]; then
+    mkdir -p zips
+    rm -f "zips/${RID}_v${VERSION}.zip"
+    zip -j "zips/${RID}_v${VERSION}.zip" "publish/$RID"/idflint* "publish/$RID"/*.so 2>/dev/null || \
+    zip -j "zips/${RID}_v${VERSION}.zip" "publish/$RID"/*
+fi
