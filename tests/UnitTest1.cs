@@ -230,6 +230,39 @@ SizingPeriod:DesignDay,
         }
 
         [Test]
+        public void TestPlantLoopBackwardsTemperatureLimits()
+        {
+            // Maximum Loop Temperature is field 5, Minimum Loop Temperature is field 6.
+            string idf = "Version,25.2;\nPlantLoop,Chilled Water Loop,Water,,CHW Ops,CHW Supply Outlet,4,98;";
+            AssertError(idf, typeof(PlantLoopTemperatureLimitsError));
+        }
+
+        [Test]
+        public void TestCondenserLoopBackwardsTemperatureLimits()
+        {
+            string idf = "Version,25.2;\nCondenserLoop,Condenser Loop,Water,,CW Ops,CW Supply Outlet,10,80;";
+            AssertError(idf, typeof(PlantLoopTemperatureLimitsError));
+        }
+
+        [Test]
+        public void TestPlantLoopCorrectTemperatureLimitsNoError()
+        {
+            string idf = "Version,25.2;\nPlantLoop,Chilled Water Loop,Water,,CHW Ops,CHW Supply Outlet,98,1;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is PlantLoopTemperatureLimitsError));
+        }
+
+        [Test]
+        public void TestPlantLoopBlankTemperatureLimitsNoError()
+        {
+            string idf = "Version,25.2;\nPlantLoop,Chilled Water Loop,Water,,CHW Ops,CHW Supply Outlet,,;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is PlantLoopTemperatureLimitsError));
+        }
+
+        [Test]
         public void TestBuildingReferenceList()
         {
             string idf = "Schedule:Constant,  Test Schedule  ,,5;";

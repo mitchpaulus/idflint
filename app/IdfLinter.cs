@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using dotnet.checks;
@@ -130,7 +131,49 @@ namespace dotnet
                 errors.Add(new MissingTimestepError());
             }
 
+            CheckPlantLoopTemperatureLimits(parsed, byType, errors);
+
             return errors;
+        }
+
+        /// <summary>
+        /// The Minimum Loop Temperature on a PlantLoop or CondenserLoop must not
+        /// exceed its Maximum Loop Temperature. Blank or non-numeric values are
+        /// left to the other field checks.
+        /// </summary>
+        private void CheckPlantLoopTemperatureLimits(ParsedIdf parsed, Dictionary<string, List<int>> byType, List<IdfError> errors)
+        {
+            string[] loopTypeNames = { "PlantLoop", "CondenserLoop" };
+
+            foreach (string loopTypeName in loopTypeNames)
+            {
+                if (!byType.TryGetValue(loopTypeName, out List<int> loopIndexes)) continue;
+
+                IdfObject loopObject = _provider.GetIdfObject(loopTypeName);
+
+                foreach (int loopIndex in loopIndexes)
+                {
+                    RawObject loop = parsed.Object(loopIndex);
+
+                    if (!loopObject.TryGetFieldValue(parsed, loop, "Minimum Loop Temperature", out string minimumText) ||
+                        !loopObject.TryGetFieldValue(parsed, loop, "Maximum Loop Temperature", out string maximumText))
+                    {
+                        continue;
+                    }
+
+                    if (!double.TryParse(minimumText, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out double minimum) ||
+                        !double.TryParse(maximumText, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out double maximum))
+                    {
+                        continue;
+                    }
+
+                    if (minimum > maximum)
+                    {
+                        loopObject.TryGetFieldValue(parsed, loop, "Name", out string loopName);
+                        errors.Add(new PlantLoopTemperatureLimitsError(parsed.ObjectPosition(loop), loopTypeName, loopName, minimum, maximum));
+                    }
+                }
+            }
         }
 
         /// <summary>
