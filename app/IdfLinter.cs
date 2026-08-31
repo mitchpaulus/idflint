@@ -132,8 +132,176 @@ namespace dotnet
             }
 
             CheckPlantLoopTemperatureLimits(parsed, byType, errors);
+            CheckOperationSchemeLoopTypes(parsed, byType, errors);
+            CheckZonesHaveThermostats(parsed, byType, errors);
 
             return errors;
+        }
+
+        // Object types that associate a thermostat with a zone through their
+        // "Zone or ZoneList Name" field.
+        private static readonly string[] ThermostatObjectTypes =
+        {
+            "ZoneControl:Thermostat",
+            "ZoneControl:Thermostat:StagedDualSetpoint",
+        };
+
+        /// <summary>
+        /// A zone with a ZoneHVAC:EquipmentConnections object is conditioned, so it
+        /// needs a thermostat; EnergyPlus fails during simulation otherwise. Zones
+        /// without equipment connections (plenums, unconditioned zones) are fine
+        /// without one and are not flagged.
+        /// </summary>
+        private void CheckZonesHaveThermostats(ParsedIdf parsed, Dictionary<string, List<int>> byType, List<IdfError> errors)
+        {
+            if (!byType.TryGetValue("ZoneHVAC:EquipmentConnections", out List<int> connectionIndexes)) return;
+
+            // ZoneList name -> member zone names, for expanding thermostat assignments.
+            Dictionary<string, List<string>> zoneLists = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            if (byType.TryGetValue("ZoneList", out List<int> zoneListIndexes))
+            {
+                foreach (int zoneListIndex in zoneListIndexes)
+                {
+                    RawObject zoneList = parsed.Object(zoneListIndex);
+                    if (zoneList.FieldCount == 0) continue;
+                    List<string> members = new List<string>();
+                    // Field 0 is the list name; every following field is a member zone name.
+                    for (int k = 1; k < zoneList.FieldCount; k++)
+                    {
+                        string member = parsed.FieldText(zoneList.FirstField + k);
+                        if (!string.IsNullOrWhiteSpace(member)) members.Add(member);
+                    }
+                    zoneLists[parsed.FieldText(zoneList.FirstField)] = members;
+                }
+            }
+
+            HashSet<string> zonesWithThermostats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string thermostatType in ThermostatObjectTypes)
+            {
+                if (!byType.TryGetValue(thermostatType, out List<int> thermostatIndexes)) continue;
+                IdfObject thermostatObject = _provider.GetIdfObject(thermostatType);
+                foreach (int thermostatIndex in thermostatIndexes)
+                {
+                    RawObject thermostat = parsed.Object(thermostatIndex);
+                    if (!thermostatObject.TryGetFieldValue(parsed, thermostat, "Zone or ZoneList Name", out string zoneOrZoneList) ||
+                        string.IsNullOrWhiteSpace(zoneOrZoneList))
+                    {
+                        continue;
+                    }
+
+                    zonesWithThermostats.Add(zoneOrZoneList);
+                    if (zoneLists.TryGetValue(zoneOrZoneList, out List<string> members))
+                    {
+                        foreach (string member in members) zonesWithThermostats.Add(member);
+                    }
+                }
+            }
+
+            IdfObject connectionsObject = _provider.GetIdfObject("ZoneHVAC:EquipmentConnections");
+            foreach (int connectionIndex in connectionIndexes)
+            {
+                RawObject connections = parsed.Object(connectionIndex);
+                if (connectionsObject.TryGetFieldValue(parsed, connections, "Zone Name", out string zoneName) &&
+                    !string.IsNullOrWhiteSpace(zoneName) &&
+                    !zonesWithThermostats.Contains(zoneName))
+                {
+                    errors.Add(new ZoneMissingThermostatError(parsed.ObjectPosition(connections), zoneName));
+                }
+            }
+        }
+
+        /// <summary>
+        /// A loop declared as Cooling/Condenser in its Sizing:Plant object should not
+        /// be controlled by PlantEquipmentOperation:HeatingLoad schemes, and a
+        /// Heating/Steam loop should not use PlantEquipmentOperation:CoolingLoad.
+        /// Loops without a Sizing:Plant object are skipped since their intent is unknown.
+        /// </summary>
+        private void CheckOperationSchemeLoopTypes(ParsedIdf parsed, Dictionary<string, List<int>> byType, List<IdfError> errors)
+        {
+            if (!byType.TryGetValue("Sizing:Plant", out List<int> sizingIndexes)) return;
+
+            // Loop name -> declared Loop Type (Heating, Cooling, Condenser, Steam).
+            Dictionary<string, string> loopTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            IdfObject sizingObject = _provider.GetIdfObject("Sizing:Plant");
+            foreach (int sizingIndex in sizingIndexes)
+            {
+                RawObject sizing = parsed.Object(sizingIndex);
+                if (sizingObject.TryGetFieldValue(parsed, sizing, "Plant or Condenser Loop Name", out string loopName) &&
+                    sizingObject.TryGetFieldValue(parsed, sizing, "Loop Type", out string loopType) &&
+                    !string.IsNullOrWhiteSpace(loopName) && !string.IsNullOrWhiteSpace(loopType))
+                {
+                    loopTypes[loopName] = loopType;
+                }
+            }
+
+            if (loopTypes.Count == 0) return;
+
+            var loopKinds = new (string LoopObjectType, string SchemesObjectType, string SchemesFieldName)[]
+            {
+                ("PlantLoop", "PlantEquipmentOperationSchemes", "Plant Equipment Operation Scheme Name"),
+                ("CondenserLoop", "CondenserEquipmentOperationSchemes", "Condenser Equipment Operation Scheme Name"),
+            };
+
+            foreach ((string loopObjectType, string schemesObjectType, string schemesFieldName) in loopKinds)
+            {
+                if (!byType.TryGetValue(loopObjectType, out List<int> loopIndexes)) continue;
+
+                // Operation schemes list name -> its object index.
+                Dictionary<string, int> schemesByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                if (byType.TryGetValue(schemesObjectType, out List<int> schemesIndexes))
+                {
+                    foreach (int schemesIndex in schemesIndexes)
+                    {
+                        RawObject schemes = parsed.Object(schemesIndex);
+                        if (schemes.FieldCount > 0) schemesByName[parsed.FieldText(schemes.FirstField)] = schemesIndex;
+                    }
+                }
+
+                if (schemesByName.Count == 0) continue;
+
+                IdfObject loopObject = _provider.GetIdfObject(loopObjectType);
+                IdfObject schemesObject = _provider.GetIdfObject(schemesObjectType);
+
+                foreach (int loopIndex in loopIndexes)
+                {
+                    RawObject loop = parsed.Object(loopIndex);
+                    if (!loopObject.TryGetFieldValue(parsed, loop, "Name", out string loopName) ||
+                        !loopTypes.TryGetValue(loopName, out string loopType))
+                    {
+                        continue;
+                    }
+
+                    bool coolingLoop = loopType.Equals("Cooling", StringComparison.OrdinalIgnoreCase) ||
+                                       loopType.Equals("Condenser", StringComparison.OrdinalIgnoreCase);
+                    bool heatingLoop = loopType.Equals("Heating", StringComparison.OrdinalIgnoreCase) ||
+                                       loopType.Equals("Steam", StringComparison.OrdinalIgnoreCase);
+
+                    string mismatchedSchemeType;
+                    if (coolingLoop) mismatchedSchemeType = "PlantEquipmentOperation:HeatingLoad";
+                    else if (heatingLoop) mismatchedSchemeType = "PlantEquipmentOperation:CoolingLoad";
+                    else continue;
+
+                    if (!loopObject.TryGetFieldValue(parsed, loop, schemesFieldName, out string schemesName) ||
+                        !schemesByName.TryGetValue(schemesName, out int schemesObjectIndex))
+                    {
+                        continue;
+                    }
+
+                    RawObject schemes = parsed.Object(schemesObjectIndex);
+                    for (int k = 0; k < schemes.FieldCount; k++)
+                    {
+                        IdfField expectedField = schemesObject.ExpectedFieldAt(k);
+                        if (expectedField == null) break;
+                        if (!expectedField.Name.EndsWith("Object Type", StringComparison.OrdinalIgnoreCase)) continue;
+
+                        int fieldIndex = schemes.FirstField + k;
+                        if (parsed.FieldSpan(fieldIndex).Equals(mismatchedSchemeType, StringComparison.OrdinalIgnoreCase))
+                        {
+                            errors.Add(new OperationSchemeLoopTypeMismatchError(parsed.FieldPosition(fieldIndex), loopName, loopType, mismatchedSchemeType));
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>

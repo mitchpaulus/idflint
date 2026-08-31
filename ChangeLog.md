@@ -4,3 +4,5 @@
 
 - Warn when no `Timestep` object is found, since EnergyPlus defaults to 4 timesteps per hour ([#21](https://github.com/mitchpaulus/idflint/issues/21)).
 - Error when a `PlantLoop` or `CondenserLoop` has a Minimum Loop Temperature greater than its Maximum Loop Temperature ([#5](https://github.com/mitchpaulus/idflint/issues/5)).
+- Error when a loop declared as Cooling/Condenser in `Sizing:Plant` uses a `PlantEquipmentOperation:HeatingLoad` scheme, or a Heating/Steam loop uses `PlantEquipmentOperation:CoolingLoad` ([#9](https://github.com/mitchpaulus/idflint/issues/9)).
+- Error when a zone has a `ZoneHVAC:EquipmentConnections` object but no thermostat (`ZoneControl:Thermostat` or `ZoneControl:Thermostat:StagedDualSetpoint`, directly or through a `ZoneList`) associated with it ([#12](https://github.com/mitchpaulus/idflint/issues/12)).
