@@ -230,6 +230,61 @@ SizingPeriod:DesignDay,
         }
 
         [Test]
+        public void TestHeatingLoadSchemeOnCoolingLoop()
+        {
+            string idf = @"Version,25.2;
+Sizing:Plant,CHW Loop,Cooling,6.7,5;
+PlantLoop,CHW Loop,Water,,CHW Ops,CHW Outlet,98,1;
+PlantEquipmentOperationSchemes,CHW Ops,PlantEquipmentOperation:HeatingLoad,Heating Scheme,Always On;";
+            AssertError(idf, typeof(OperationSchemeLoopTypeMismatchError));
+        }
+
+        [Test]
+        public void TestCoolingLoadSchemeOnHeatingLoop()
+        {
+            string idf = @"Version,25.2;
+Sizing:Plant,HW Loop,Heating,82,11;
+PlantLoop,HW Loop,Water,,HW Ops,HW Outlet,100,10;
+PlantEquipmentOperationSchemes,HW Ops,PlantEquipmentOperation:CoolingLoad,Cooling Scheme,Always On;";
+            AssertError(idf, typeof(OperationSchemeLoopTypeMismatchError));
+        }
+
+        [Test]
+        public void TestHeatingLoadSchemeOnCondenserLoop()
+        {
+            string idf = @"Version,25.2;
+Sizing:Plant,CW Loop,Condenser,29,5;
+CondenserLoop,CW Loop,Water,,CW Ops,CW Outlet,80,10;
+CondenserEquipmentOperationSchemes,CW Ops,PlantEquipmentOperation:HeatingLoad,Heating Scheme,Always On;";
+            AssertError(idf, typeof(OperationSchemeLoopTypeMismatchError));
+        }
+
+        [Test]
+        public void TestMatchingLoadSchemeOnCoolingLoopNoError()
+        {
+            string idf = @"Version,25.2;
+Sizing:Plant,CHW Loop,Cooling,6.7,5;
+PlantLoop,CHW Loop,Water,,CHW Ops,CHW Outlet,98,1;
+PlantEquipmentOperationSchemes,CHW Ops,PlantEquipmentOperation:CoolingLoad,Cooling Scheme,Always On;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is OperationSchemeLoopTypeMismatchError));
+        }
+
+        [Test]
+        public void TestLoopWithoutSizingPlantSchemeNotChecked()
+        {
+            // Without a Sizing:Plant object the loop's intent is unknown, so no
+            // scheme type mismatch can be reported.
+            string idf = @"Version,25.2;
+PlantLoop,CHW Loop,Water,,CHW Ops,CHW Outlet,98,1;
+PlantEquipmentOperationSchemes,CHW Ops,PlantEquipmentOperation:HeatingLoad,Heating Scheme,Always On;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is OperationSchemeLoopTypeMismatchError));
+        }
+
+        [Test]
         public void TestZoneWithEquipmentButNoThermostat()
         {
             string idf = @"Version,25.2;
