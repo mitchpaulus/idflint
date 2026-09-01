@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using dotnet.checks;
 
 namespace dotnet
@@ -275,6 +276,12 @@ namespace dotnet
 
                     if (parsesAsDouble)
                     {
+                        if (parsed > ImplausibleCopError.Threshold && IsCopField(expectedField))
+                        {
+                            double? capacity = TryFindRatedCapacity(idf, obj, expectedField);
+                            errors.Add(new ImplausibleCopError(idf.FieldPosition(fieldIndex), Name, expectedField.Name, parsed, capacity));
+                        }
+
                         if (expectedField.MinType == IdfFieldMinMaxType.Inclusive && parsed < expectedField.Minimum)
                             errors.Add(new NumericFieldOutOfRangeError(idf.FieldPosition(fieldIndex), MinMax.Minimum, expectedField.MinType, value.ToString(), expectedField.Minimum, expectedField.Name));
                         else if (expectedField.MinType == IdfFieldMinMaxType.Exclusive && parsed <= expectedField.Minimum)
@@ -295,6 +302,52 @@ namespace dotnet
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// A coefficient of performance field: dimensionless W/W with "COP" in the name.
+        /// </summary>
+        private static bool IsCopField(IdfField field) =>
+            field.AlphaNumeric == IdfFieldAlphaNumeric.Numeric &&
+            string.Equals(field.Units, "W/W", StringComparison.OrdinalIgnoreCase) &&
+            field.Name.Contains("COP", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Looks for the rated capacity (units W) that pairs with a COP field in the same
+        /// object, matching on cooling/heating and on any "Speed N" prefix, so the
+        /// implied input power can be reported. Returns null when no numeric match exists.
+        /// </summary>
+        private double? TryFindRatedCapacity(ParsedIdf idf, in RawObject obj, IdfField copField)
+        {
+            bool cooling = copField.Name.Contains("Cooling", StringComparison.OrdinalIgnoreCase);
+            bool heating = copField.Name.Contains("Heating", StringComparison.OrdinalIgnoreCase);
+            string speed = SpeedToken(copField.Name);
+
+            for (int k = 0; k < obj.FieldCount; k++)
+            {
+                IdfField candidate = ExpectedFieldAt(k);
+                if (candidate == null) break;
+                if (candidate.AlphaNumeric != IdfFieldAlphaNumeric.Numeric) continue;
+                if (!string.Equals(candidate.Units, "W", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!candidate.Name.Contains("Capacity", StringComparison.OrdinalIgnoreCase)) continue;
+                if (cooling && !candidate.Name.Contains("Cooling", StringComparison.OrdinalIgnoreCase)) continue;
+                if (heating && !candidate.Name.Contains("Heating", StringComparison.OrdinalIgnoreCase)) continue;
+                if (!string.Equals(SpeedToken(candidate.Name), speed, StringComparison.OrdinalIgnoreCase)) continue;
+
+                if (double.TryParse(idf.FieldSpan(obj.FirstField + k), NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out double capacity))
+                {
+                    return capacity;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Returns the "Speed N" token from a field name, or "" if there is none.</summary>
+        private static string SpeedToken(string fieldName)
+        {
+            Match match = Regex.Match(fieldName, @"\bSpeed \d+\b", RegexOptions.IgnoreCase);
+            return match.Success ? match.Value : "";
         }
 
         public string PrintDefaultObject()

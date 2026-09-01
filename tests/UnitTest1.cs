@@ -263,6 +263,49 @@ SizingPeriod:DesignDay,
         }
 
         [Test]
+        public void TestCoolingCopEnteredAsPower()
+        {
+            // Gross Rated Total Cooling Capacity is field 9, Gross Rated Cooling COP is field 11.
+            string idf = "Version,25.2;\nCoil:Cooling:WaterToAirHeatPump:EquationFit,WSHP Clg Coil,,W In,W Out,A In,A Out,0.5,0.001,10814,8000,2870;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            IdfError error = errors.FirstOrDefault(e => e is ImplausibleCopError);
+            Assert.IsNotNull(error);
+            Assert.AreEqual(2, error.Line());
+            StringAssert.Contains("Gross Rated Cooling COP", error.Message());
+            StringAssert.Contains("3.768 W of input power for 10814 W of capacity", error.Message());
+        }
+
+        [Test]
+        public void TestHeatingCopEnteredAsPower()
+        {
+            // Gross Rated Heating Capacity is field 9, Gross Rated Heating COP is field 10.
+            string idf = "Version,25.2;\nCoil:Heating:WaterToAirHeatPump:EquationFit,WSHP Htg Coil,,W In,W Out,A In,A Out,0.5,0.001,12000,4380;";
+            AssertError(idf, typeof(ImplausibleCopError));
+        }
+
+        [Test]
+        public void TestImplausibleCopWithoutCapacityStillReported()
+        {
+            // Capacity is autosized, so only the COP itself can be reported.
+            string idf = "Version,25.2;\nCoil:Cooling:WaterToAirHeatPump:EquationFit,WSHP Clg Coil,,W In,W Out,A In,A Out,0.5,0.001,autosize,autosize,2870;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            IdfError error = errors.FirstOrDefault(e => e is ImplausibleCopError);
+            Assert.IsNotNull(error);
+            StringAssert.Contains("above the plausible limit of 20", error.Message());
+        }
+
+        [Test]
+        public void TestPlausibleCopNoError()
+        {
+            string idf = "Version,25.2;\nCoil:Cooling:WaterToAirHeatPump:EquationFit,WSHP Clg Coil,,W In,W Out,A In,A Out,0.5,0.001,10814,8000,3.8;";
+            IdfLinter linter = new IdfLinter(idf);
+            var errors = linter.Lint();
+            Assert.IsFalse(errors.Any(error => error is ImplausibleCopError));
+        }
+
+        [Test]
         public void TestHeatingLoadSchemeOnCoolingLoop()
         {
             string idf = @"Version,25.2;
